@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="day">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🤠 Cowboy Robert's Bulls & Cows — Multiplayer</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sand:#e8c97a;--dark-sand:#c4a24a;--brown:#6b3a1f;--dark-brown:#3d1f0a;
+  --red:#c0392b;--green:#27ae60;--cream:#f5e6c8;--blue:#2980b9;
+  --sky1:#3a7bbf;--sky2:#7ec8d4;--sky3:#c4a24a;--sky4:#e8c97a;
+  --ui-bg:var(--cream);--ui-text:var(--dark-brown);--ui-border:var(--dark-brown);
+}
+[data-theme="night"]{
+  --sky1:#0a0a2e;--sky2:#1a1a4e;--sky3:#2a1a3e;--sky4:#1a0e28;
+  --ui-bg:#1e1410;--ui-text:#e8c97a;--ui-border:#c4a24a;--cream:#1e1410;--dark-brown:#e8c97a;--brown:#c4a24a;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'VT323',monospace;min-height:100vh;overflow-x:hidden;background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 40%,var(--sky3) 70%,var(--sky4) 100%);transition:background 1s}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0,rgba(0,0,0,.03) 1px,transparent 1px,transparent 2px);pointer-events:none;z-index:9999}
+.ground{position:fixed;bottom:0;left:0;right:0;height:60px;background:linear-gradient(180deg,#b8860b,#8b6914);border-top:4px solid var(--dark-brown);z-index:1}
+
+/* PIXEL BOX */
+.pbox{background:var(--ui-bg);border:3px solid var(--ui-border);box-shadow:4px 4px 0 var(--dark-brown)}
+
+/* TOP BAR */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(61,31,10,.95);border-bottom:2px solid var(--sand);padding:6px 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
+.topbar-title{font-family:'Press Start 2P';font-size:9px;color:var(--sand);text-shadow:2px 2px 0 var(--dark-brown)}
+.topbar-group{display:flex;gap:4px;align-items:center}
+.ctrl-btn{font-family:'Press Start 2P';font-size:6px;padding:4px 7px;background:rgba(61,31,10,.9);color:var(--sand);border:2px solid var(--sand);cursor:pointer}
+.ctrl-btn:hover{background:var(--dark-brown)}
+.ctrl-btn.active{background:var(--brown);border-color:var(--sand)}
+
+/* BUTTONS */
+.btn{font-family:'Press Start 2P';font-size:9px;padding:9px 14px;background:var(--brown);color:var(--sand);border:3px solid var(--dark-brown);box-shadow:3px 3px 0 var(--dark-brown);cursor:pointer;text-transform:uppercase;transition:transform .05s,box-shadow .05s;display:inline-block;text-align:center}
+.btn:hover{background:var(--dark-brown)}.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--dark-brown)}
+.btn-green{background:#27ae60;color:#fff}.btn-green:hover{background:#1e8449}
+.btn-red{background:#c0392b;color:#fff}.btn-red:hover{background:#922b21}
+.btn-blue{background:#2980b9;color:#fff}.btn-blue:hover{background:#1a6090}
+.btn-sm{font-size:7px;padding:6px 10px}
+.btn-full{width:100%;display:block}
+
+/* SCREENS */
+.screen{display:none;position:relative;z-index:10;min-height:100vh;padding:55px 12px 80px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px}
+.screen.active{display:flex}
+
+/* LOBBY */
+.lobby-box{width:100%;max-width:440px;padding:18px}
+.lobby-title{font-family:'Press Start 2P';font-size:13px;color:var(--ui-text);text-align:center;margin-bottom:14px;line-height:1.8;text-shadow:2px 2px 0 var(--sand)}
+.input-field{width:100%;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'VT323';font-size:20px;padding:8px 10px;outline:none}
+.input-field::placeholder{color:rgba(232,201,122,.4)}
+.input-field:focus{border-color:var(--sand);box-shadow:0 0 0 2px rgba(232,201,122,.3)}
+.slabel{font-family:'Press Start 2P';font-size:7px;color:var(--ui-text);padding:4px 0;margin-bottom:4px;display:block}
+.divider{border:none;border-top:2px solid var(--ui-border);margin:14px 0}
+.avatar-row{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.av-opt{width:44px;height:44px;background:var(--ui-bg);border:3px solid var(--brown);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;transition:all .1s}
+.av-opt:hover,.av-opt.sel{background:var(--sand);border-color:var(--red);box-shadow:2px 2px 0 var(--red)}
+
+/* WAITING ROOM */
+.waiting-box{width:100%;max-width:500px;padding:18px;text-align:center}
+.room-code{font-family:'Press Start 2P';font-size:22px;color:var(--sand);background:var(--dark-brown);padding:10px 20px;border:3px solid var(--sand);letter-spacing:4px;display:inline-block;margin:8px 0}
+.player-cards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.player-card{padding:10px 16px;border:3px solid var(--ui-border);background:var(--ui-bg);text-align:center;min-width:120px}
+.player-card.ready{border-color:var(--green);background:rgba(39,174,96,.08)}
+.player-card-av{font-size:32px;margin-bottom:4px}
+.player-card-name{font-family:'Press Start 2P';font-size:8px;color:var(--ui-text)}
+.player-card-status{font-size:14px;color:var(--green);margin-top:4px}
+.player-slot{border:3px dashed rgba(232,201,122,.3);background:rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;min-width:120px;padding:10px;color:rgba(232,201,122,.4);font-size:14px}
+
+/* SECRET PICK */
+.secret-box{width:100%;max-width:440px;padding:16px}
+.digit-pick-row{display:flex;gap:5px;justify-content:center;margin:8px 0}
+.dpick{width:48px;height:58px;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'Press Start 2P';font-size:18px;text-align:center;line-height:52px;cursor:pointer}
+.dpick.empty{color:rgba(232,201,122,.2)}
+.snumpad{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0}
+.snpb{height:42px;background:var(--brown);border:2px solid var(--dark-brown);color:var(--sand);font-family:'VT323';font-size:24px;cursor:pointer;text-align:center;line-height:38px;box-shadow:2px 2px 0 var(--dark-brown)}
+.snpb:hover,.snpb:active{background:var(--dark-brown)}
+.snpb.used{background:#222;color:#444;cursor:not-allowed;box-shadow:none}
+.snpb.del{background:var(--red)}
+
+/* GAME AREA */
+.game-wrap{width:100%;max-width:800px;display:flex;flex-direction:column;gap:10px}
+.game-hud{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;flex-wrap:wrap;gap:6px}
+.hud-item{display:flex;flex-direction:column;align-items:center}
+.hud-label{font-family:'Press Start 2P';font-size:6px;color:var(--brown);margin-bottom:2px}
+.hud-val{font-size:20px;color:var(--ui-text)}
+.timer-bar{height:8px;background:var(--dark-brown);border:2px solid var(--sand);overflow:hidden;flex:1;min-width:80px;margin:0 8px}
+.timer-fill{height:100%;background:var(--green);transition:width 1s linear}
+.timer-fill.warn{background:#e67e22}
+.timer-fill.danger{background:var(--red)}
+
+/* PLAYERS SIDE BY SIDE */
+.duel-area{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start}
+.duel-side{display:flex;flex-direction:column;gap:8px}
+.vs-badge{font-family:'Press Start 2P';font-size:16px;color:var(--red);text-shadow:2px 2px 0 var(--dark-brown);animation:pulse 1s infinite alternate;padding-top:16px;text-align:center}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.1)}}
+.player-header{display:flex;align-items:center;gap:8px;padding:8px}
+.player-av-large{font-size:32px}
+.player-name-block{flex:1}
+.player-name{font-family:'Press Start 2P';font-size:8px;color:var(--ui-text);margin-bottom:2px}
+.player-tag{font-size:13px;color:var(--brown)}
+.you-badge{font-family:'Press Start 2P';font-size:6px;color:var(--sand);background:var(--brown);padding:2px 5px}
+.turn-indicator{font-family:'Press Start 2P';font-size:6px;padding:3px 6px;animation:pulse .7s infinite alternate}
+.turn-indicator.active{color:var(--green);background:rgba(39,174,96,.12)}
+.turn-indicator.waiting{color:var(--brown)}
+
+/* GUESS INPUT */
+.guess-area{padding:10px}
+.digit-row{display:flex;gap:5px;justify-content:center;margin-bottom:8px}
+.dbox{width:44px;height:52px;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'Press Start 2P';font-size:16px;text-align:center;line-height:46px;cursor:pointer}
+.dbox.empty{color:rgba(232,201,122,.2)}.dbox:hover{background:#4a2810}
+.numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:8px}
+.npb{height:38px;background:var(--brown);border:2px solid var(--dark-brown);color:var(--sand);font-family:'VT323';font-size:22px;cursor:pointer;text-align:center;line-height:34px;box-shadow:2px 2px 0 var(--dark-brown)}
+.npb:hover,.npb:active{background:var(--dark-brown)}
+.npb.used{background:#2a1a0a;color:#3a2a1a;cursor:not-allowed;box-shadow:none}
+.npb.del{background:var(--red);color:#fff}
+.fire-btn{width:100%;font-size:10px}
+.fire-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+/* HISTORY */
+.hist-scroll{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;padding:5px}
+.hist-scroll::-webkit-scrollbar{width:5px}.hist-scroll::-webkit-scrollbar-track{background:var(--dark-brown)}.hist-scroll::-webkit-scrollbar-thumb{background:var(--sand)}
+.hent{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:rgba(0,0,0,.1);border-left:3px solid var(--sand);animation:slideIn .2s ease}
+.hent.latest{border-left-color:var(--red);background:rgba(192,57,43,.1)}
+@keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.hguess{font-family:'Press Start 2P';font-size:11px;letter-spacing:3px;color:var(--ui-text)}
+.hres{display:flex;gap:6px;font-size:14px}
+.bt{color:#e67e22}.cw{color:#3498db}
+.slabel{font-family:'Press Start 2P';font-size:7px;color:var(--ui-text);padding:4px 8px;border-bottom:2px solid var(--brown);background:rgba(196,162,74,.15);display:flex;justify-content:space-between;align-items:center}
+
+/* CHAT */
+.chat-panel{padding:0}
+.chat-msgs{max-height:140px;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,.1)}
+.chat-msgs::-webkit-scrollbar{width:4px}.chat-msgs::-webkit-scrollbar-track{background:var(--dark-brown)}.chat-msgs::-webkit-scrollbar-thumb{background:var(--sand)}
+.chat-line{font-size:15px;line-height:1.4;color:var(--ui-text);word-break:break-word}
+.chat-line.system{color:var(--sand);font-style:italic;font-size:13px}
+.chat-line.mine{color:var(--green)}
+.chat-line b{color:var(--sand)}
+.chat-input-row{display:flex;gap:0;border-top:2px solid var(--ui-border)}
+.chat-input{flex:1;background:var(--dark-brown);border:none;color:var(--sand);font-family:'VT323';font-size:18px;padding:6px 8px;outline:none}
+.chat-send{font-family:'Press Start 2P';font-size:7px;padding:6px 10px;background:var(--brown);color:var(--sand);border:none;border-left:2px solid var(--ui-border);cursor:pointer}
+.chat-send:hover{background:var(--dark-brown)}
+
+/* ROBERT NARRATOR */
+.robert-narrator{display:flex;align-items:flex-start;gap:10px;padding:10px 12px}
+.rnarrator-av{font-size:36px;flex-shrink:0}
+.rnarrator-bubble{background:var(--ui-bg);border:2px solid var(--ui-border);padding:7px 10px;font-size:15px;color:var(--ui-text);line-height:1.45;position:relative;flex:1;box-shadow:2px 2px 0 var(--dark-brown)}
+.rnarrator-bubble::before{content:'';position:absolute;left:-12px;top:10px;border:6px solid transparent;border-right-color:var(--ui-border)}
+.rnarrator-bubble::after{content:'';position:absolute;left:-8px;top:12px;border:4px solid transparent;border-right-color:var(--ui-bg)}
+
+/* BC FLASH */
+#bc-flash{position:fixed;inset:0;z-index:9500;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .1s}
+.bc-inner{font-family:'Press Start 2P';font-size:clamp(36px,10vw,80px);text-shadow:0 0 30px currentColor,4px 4px 0 rgba(0,0,0,.5);animation:bcPop .7s ease forwards}
+@keyframes bcPop{0%{transform:scale(0) rotate(-15deg);opacity:0}40%{transform:scale(1.3) rotate(5deg);opacity:1}70%{transform:scale(.95) rotate(-2deg);opacity:1}100%{transform:scale(1.1) rotate(0);opacity:0}}
+#bc-flash.bull-f{background:rgba(230,126,34,.18)}
+#bc-flash.cow-f{background:rgba(52,152,219,.18)}
+
+/* RESULT */
+.result-overlay{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.75);align-items:center;justify-content:center}
+.result-overlay.show{display:flex}
+.result-box{padding:28px;text-align:center;max-width:420px;width:92%;animation:popIn .3s ease}
+@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.result-title{font-family:'Press Start 2P';font-size:16px;margin-bottom:12px;text-shadow:2px 2px 0 var(--dark-brown)}
+.result-win{color:var(--sand)}.result-lose{color:#e74c3c}.result-draw{color:var(--sand)}
+.result-body{font-size:19px;color:var(--ui-text);margin-bottom:14px;line-height:1.65}
+
+/* STATUS / TOAST */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9000;font-family:'Press Start 2P';font-size:8px;background:var(--dark-brown);color:var(--sand);border:2px solid var(--sand);padding:8px 16px;display:none;animation:popIn .2s ease;text-align:center;max-width:90%}
+#conn-status{position:fixed;top:40px;right:8px;z-index:600;font-family:'Press Start 2P';font-size:6px;padding:3px 6px;border:1px solid}
+#conn-status.online{background:rgba(39,174,96,.2);color:#6f6;border-color:#6f6}
+#conn-status.offline{background:rgba(192,57,43,.2);color:#f66;border-color:#f66}
+
+/* MOBILE */
+@media(max-width:600px){
+  .duel-area{grid-template-columns:1fr}
+  .vs-badge{padding:4px 0;font-size:12px}
+  .dbox{width:38px;height:46px;font-size:14px;line-height:40px}
+  .npb{height:34px;font-size:20px;line-height:30px}
+  .btn{font-size:8px;padding:7px 10px}
+  .topbar-title{font-size:7px}
+}
+</style>
+</head>
+<body>
+<div class="ground"></div>
+<div id="bc-flash"><div class="bc-inner" id="bc-text"></div></div>
+<div id="toast"></div>
+<div id="conn-status" class="offline">● OFFLINE</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-title">🤠 BULLS &amp; COWS ONLINE</div>
+  <div class="topbar-group">
+    <button class="ctrl-btn" onclick="toggleTheme()" id="theme-btn">🌙 NIGHT</button>
+  </div>
+</div>
+
+<!-- ══════════ SCREEN: LOBBY ══════════ -->
+<div class="screen active" id="screen-lobby">
+  <div class="pbox lobby-box">
+    <div class="lobby-title">🤠 COWBOY ROBERT'S<br>BULLS &amp; COWS<br><span style="font-size:9px;color:var(--brown)">MULTIPLAYER DUEL</span></div>
+
+    <span class="slabel">YOUR NAME</span>
+    <input class="input-field" id="player-name" maxlength="16" placeholder="Enter yer name..." value="Cowpoke"/>
+
+    <div style="height:10px"></div>
+    <span class="slabel">YOUR AVATAR</span>
+    <div class="avatar-row" id="avatar-row">
+      <div class="av-opt sel" onclick="selAv(this,'🤠')">🤠</div>
+      <div class="av-opt" onclick="selAv(this,'🧑‍🌾')">🧑‍🌾</div>
+      <div class="av-opt" onclick="selAv(this,'🦊')">🦊</div>
+      <div class="av-opt" onclick="selAv(this,'🐻')">🐻</div>
+      <div class="av-opt" onclick="selAv(this,'🐸')">🐸</div>
+      <div class="av-opt" onclick="selAv(this,'🦅')">🦅</div>
+      <div class="av-opt" onclick="selAv(this,'🐺')">🐺</div>
+      <div class="av-opt" onclick="selAv(this,'🦋')">🦋</div>
+      <div class="av-opt" onclick="selAv(this,'🐯')">🐯</div>
+      <div class="av-opt" onclick="selAv(this,'🤖')">🤖</div>
+    </div>
+
+    <div style="height:10px"></div>
+    <span class="slabel">DIFFICULTY</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <div class="av-opt sel" style="width:auto;padding:6px 12px;font-size:14px" onclick="selDiff(this,3)" id="d3">🌵 3 digits</div>
+      <div class="av-opt" style="width:auto;padding:6px 12px;font-size:14px" onclick="selDiff(this,4)" id="d4">🐂 4 digits</div>
+      <div class="av-opt" style="width:auto;padding:6px 12px;font-size:14px" onclick="selDiff(this,5)" id="d5">💀 5 digits</div>
+    </div>
+
+    <hr class="divider">
+
+    <button class="btn btn-green btn-full" style="margin-bottom:8px" onclick="findMatch()">🔍 FIND RANDOM OPPONENT</button>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-blue" onclick="showCreatePrivate()">🔒 CREATE PRIVATE ROOM</button>
+      <button class="btn" onclick="showJoinPrivate()">🚪 JOIN PRIVATE ROOM</button>
+    </div>
+
+    <div id="private-create-panel" style="display:none;margin-top:10px">
+      <span class="slabel">SET A PASSWORD (optional)</span>
+      <input class="input-field" id="create-password" maxlength="16" placeholder="Leave empty for no password"/>
+      <div style="height:8px"></div>
+      <button class="btn btn-blue btn-full" onclick="createPrivate()">CREATE ROOM</button>
+    </div>
+
+    <div id="private-join-panel" style="display:none;margin-top:10px">
+      <span class="slabel">ROOM CODE</span>
+      <input class="input-field" id="join-code" maxlength="12" placeholder="e.g. PRIV_ABC123" style="margin-bottom:6px"/>
+      <span class="slabel">PASSWORD (if required)</span>
+      <input class="input-field" id="join-password" maxlength="16" placeholder="Leave empty if none"/>
+      <div style="height:8px"></div>
+      <button class="btn btn-green btn-full" onclick="joinPrivate()">JOIN ROOM</button>
+    </div>
+
+    <hr class="divider">
+    <div style="font-size:14px;color:var(--brown);text-align:center;line-height:1.6">
+      No repeating digits. No leading zero.<br>
+      🐂 Bull = right digit, right place<br>
+      🐄 Cow = right digit, wrong place<br>
+      ⏰ 60 seconds per turn
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SCREEN: WAITING ══════════ -->
+<div class="screen" id="screen-waiting">
+  <div class="pbox waiting-box">
+    <div id="wait-title" style="font-family:'Press Start 2P';font-size:10px;color:var(--ui-text);text-align:center;margin-bottom:12px;line-height:1.8"></div>
+
+    <div id="room-code-wrap" style="display:none;margin-bottom:10px">
+      <div style="font-family:'Press Start 2P';font-size:7px;color:var(--brown);margin-bottom:4px;text-align:center">SHARE THIS ROOM CODE:</div>
+      <div class="room-code" id="room-code-display"></div>
+      <div style="font-size:14px;color:var(--brown);text-align:center;margin-top:4px">Send this to your friend!</div>
+    </div>
+
+    <div class="player-cards" id="player-cards-wrap"></div>
+
+    <div id="queue-msg" style="font-size:18px;color:var(--sand);text-align:center;margin:8px 0;display:none">
+      🔍 Searching for opponent...<br>
+      <span style="font-size:14px;color:var(--brown)">This may take a moment</span>
+    </div>
+
+    <button class="btn btn-red btn-sm" onclick="cancelWait()" style="margin-top:10px">✖ CANCEL</button>
+  </div>
+</div>
+
+<!-- ══════════ SCREEN: PICK SECRET ══════════ -->
+<div class="screen" id="screen-secret">
+  <div class="pbox secret-box">
+    <div style="font-family:'Press Start 2P';font-size:9px;color:var(--ui-text);text-align:center;margin-bottom:10px;line-height:1.8">
+      🔐 PICK YOUR SECRET NUMBER<br>
+      <span style="font-size:7px;color:var(--brown)">Your opponent can't see this!</span>
+    </div>
+    <div class="digit-pick-row" id="secret-display"></div>
+    <div class="snumpad" id="secret-numpad"></div>
+    <button class="btn btn-green btn-full" id="confirm-secret-btn" onclick="confirmSecret()" style="opacity:.4;pointer-events:none">
+      🤠 LOCK IT IN!
+    </button>
+    <div style="font-size:14px;color:var(--brown);text-align:center;margin-top:8px" id="secret-status">
+      Waiting for both players to pick their numbers...
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SCREEN: GAME ══════════ -->
+<div class="screen" id="screen-game">
+  <div class="game-wrap">
+    <!-- Robert Narrator -->
+    <div class="pbox">
+      <div class="robert-narrator">
+        <div class="rnarrator-av">🤠</div>
+        <div class="rnarrator-bubble" id="robert-bubble">Welcome to the duel, pardners! First one to crack the other's number wins!</div>
+      </div>
+    </div>
+
+    <!-- HUD -->
+    <div class="pbox game-hud">
+      <div class="hud-item"><div class="hud-label">YOUR GUESSES</div><div class="hud-val" id="my-guess-count">0</div></div>
+      <div style="flex:1;display:flex;align-items:center;gap:6px;padding:0 8px">
+        <span style="font-family:'Press Start 2P';font-size:7px;color:var(--brown)">⏱</span>
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+        <span style="font-family:'Press Start 2P';font-size:10px;color:var(--ui-text)" id="timer-num">60</span>
+      </div>
+      <div class="hud-item"><div class="hud-label">THEIR GUESSES</div><div class="hud-val" id="opp-guess-count">0</div></div>
+    </div>
+
+    <!-- DUEL AREA -->
+    <div class="duel-area">
+      <!-- MY SIDE -->
+      <div class="duel-side">
+        <div class="pbox">
+          <div class="slabel">
+            <span id="my-side-label">YOU</span>
+            <span class="turn-indicator" id="my-turn-indicator">...</span>
+          </div>
+          <div class="player-header">
+            <div class="player-av-large" id="my-av">🤠</div>
+            <div class="player-name-block">
+              <div class="player-name" id="my-name">Me</div>
+              <div class="player-tag">🔐 secret: <span id="my-secret-show">???</span></div>
+            </div>
+            <div class="you-badge">YOU</div>
+          </div>
+        </div>
+        <div class="pbox">
+          <div class="slabel">GUESS THEIR NUMBER</div>
+          <div class="guess-area">
+            <div class="digit-row" id="digit-row"></div>
+            <div class="numpad" id="numpad"></div>
+            <button class="btn btn-green fire-btn" id="fire-btn" onclick="makeGuess()">🔫 FIRE!</button>
+          </div>
+        </div>
+        <div class="pbox">
+          <div class="slabel">YOUR GUESSES AT THEM</div>
+          <div class="hist-scroll" id="my-history"></div>
+        </div>
+      </div>
+
+      <!-- VS -->
+      <div class="vs-badge">VS</div>
+
+      <!-- OPPONENT SIDE -->
+      <div class="duel-side">
+        <div class="pbox">
+          <div class="slabel">
+            <span id="opp-side-label">OPPONENT</span>
+            <span class="turn-indicator" id="opp-turn-indicator">...</span>
+          </div>
+          <div class="player-header">
+            <div class="player-av-large" id="opp-av">❓</div>
+            <div class="player-name-block">
+              <div class="player-name" id="opp-name">Waiting...</div>
+              <div class="player-tag">🔐 secret: hidden</div>
+            </div>
+          </div>
+        </div>
+        <div class="pbox">
+          <div class="slabel">THEIR GUESSES AT YOU</div>
+          <div class="hist-scroll" id="opp-history"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="pbox chat-panel">
+      <div class="slabel">💬 CHAT</div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Say something..." maxlength="200" onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="chat-send" onclick="sendChat()">SEND</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div class="result-overlay" id="result-overlay">
+  <div class="pbox result-box">
+    <div class="result-title" id="result-title"></div>
+    <div class="result-body" id="result-body"></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-green" onclick="requestRematch()">🔄 REMATCH</button>
+      <button class="btn" onclick="goLobby()">🏠 MAIN MENU</button>
+    </div>
+    <div style="font-size:14px;color:var(--brown);margin-top:8px" id="rematch-status"></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ══════════════════════════════════════════
+// CLIENT STATE
+// ══════════════════════════════════════════
+const socket = io();
+let ME = { id: null, name: 'Cowpoke', avatar: '🤠', digits: 3 };
+let ROOM = { id: null, state: null };
+let CUR = [];      // current guess digits being typed
+let MY_SECRET = '';
+let SECRET_INPUT = [];
+let TURN = null;   // whose turn socketId
+let MY_ID = null;
+let nightMode = false;
+
+// ══════════════════════════════════════════
+// ROBERT LINES
+// ══════════════════════════════════════════
+const ROBERT = {
+  bull: ["Hot dog!! A BULL! Right digit, right place! You're narrowing it down!","A BULL! Somebody's on fire today! Keep it up!","BULL! That one hit the bullseye — literally! 🎯","Oh ho! A bull! Robert is IMPRESSED!","Right on target, cowpoke! That's a bull!"],
+  cow: ["A cow! The digit's there but it wandered off to the wrong spot!","Close but not quite — that's a cow for ya!","Cow! It exists somewhere in that number, pardner!","Almost almost! A cow means yer on the right trail!","That digit's in there, just lost on the range!"],
+  nothing: ["Nope, nothing! But now ya know what ain't in there!","Zero! Clean miss — but useful information, partner!","Not a single one! Cross those off yer list!","Zilch! The number fortress holds... for now!","None of those! Back to the drawing board, cowpoke!"],
+  myBull: ["YIKES! Your opponent got a bull on your number! Better hope they can't find the rest!","Uh oh, they got a bull! Your secret is leaking a little...","They found one right! Don't panic — they still got a ways to go!","A bull for your opponent! Feeling nervous? Robert would be.","They cracked one digit! The hunt is on!"],
+  myCow: ["Your opponent got a cow — they know one of your digits exists!","They sniffed out a cow! Your number isn't safe yet, but close!","Cow for them — they're circling, partner!"],
+  myNothing: ["Nothing for your opponent! Your number fortress stands FIRM!","They got nothing! Haha! Robert loves a good fortress!","Zero for them! Your secret number sleeps safe... tonight!"],
+  turn_you: ["Your turn, pardner! Take yer time — you got 60 seconds!","Step up and fire! The number won't guess itself!","It's your move, cowpoke! Make it count!","You're up! Think it through and take yer shot!","Time to shine! What's your guess gonna be?"],
+  turn_opp: ["Now it's their turn. Let's see what they got...","Your opponent is thinking... Robert can hear the gears grinding.","Sit tight while they make their move.","Their turn now. Hope they choke. (Just kidding.) (Kinda.)","Waiting on your opponent... *taps foot*"],
+  win: ["YEEHAW!! YOU WIN THE DUEL!! Robert is beside himself with joy! 🎉","You cracked it! The number is YOURS! Champion of the digital frontier!","VICTORY!! You outgunned, outthought, and outguessed your opponent!","I knew you had it in ya, pardner! That's how a real cowboy plays!","The duel is OVER and YOU are the victor! Take a bow!"],
+  lose: ["Oof. They got your number. The duel is lost, but the legend lives on.","Your opponent cracked the code! A fine duel, though. Tip your hat.","You fought hard but they were sharper today. Rematch?","The number has been revealed... by your opponent. Sting of defeat, pardner.","They won fair and square. Robert is proud of both of ya."],
+  chat: ["*Robert overhears the conversation and nods approvingly*","Ha! Robert loves a chatty duel!","Talk is cheap, but in Bulls & Cows, information is GOLD!","They're communicating! Robert wonders what psychological warfare is unfolding."],
+  idle: ["Both players still thinking... this is the deepest duel Robert has ever witnessed.","The tension! The drama! Robert is on the edge of his boots!","*Robert munches on some jerky while waiting*","Come on pardners, those numbers aren't gonna guess themselves!","The silence is deafening... and Robert loves it."]
+};
+
+function robSay(lines) {
+  const arr = Array.isArray(lines) ? lines : ROBERT[lines] || ['...'];
+  const txt = arr[Math.floor(Math.random() * arr.length)];
+  const b = document.getElementById('robert-bubble');
+  if (b) { b.textContent = txt; b.style.animation = 'none'; requestAnimationFrame(() => b.style.animation = ''); }
+}
+
+// ══════════════════════════════════════════
+// SOCKET EVENTS
+// ══════════════════════════════════════════
+socket.on('connect', () => {
+  MY_ID = socket.id;
+  document.getElementById('conn-status').textContent = '● ONLINE';
+  document.getElementById('conn-status').className = 'online';
+  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
+});
+socket.on('disconnect', () => {
+  document.getElementById('conn-status').textContent = '● OFFLINE';
+  document.getElementById('conn-status').className = 'offline';
+});
+socket.on('player_set', ({ id }) => { MY_ID = id; });
+
+socket.on('in_queue', () => {
+  showScreen('waiting');
+  document.getElementById('queue-msg').style.display = 'block';
+  document.getElementById('room-code-wrap').style.display = 'none';
+  document.getElementById('wait-title').textContent = '🔍 Finding Opponent...';
+  renderWaitingCards([]);
+});
+
+socket.on('room_created', ({ roomId, state }) => {
+  ROOM = { id: roomId, state };
+  showScreen('waiting');
+  document.getElementById('queue-msg').style.display = 'none';
+  document.getElementById('room-code-wrap').style.display = 'block';
+  document.getElementById('room-code-display').textContent = roomId;
+  document.getElementById('wait-title').textContent = '🔒 PRIVATE ROOM';
+  renderWaitingCards(state.players);
+});
+
+socket.on('room_joined', ({ roomId, state }) => {
+  ROOM = { id: roomId, state };
+  showScreen('waiting');
+  document.getElementById('queue-msg').style.display = 'none';
+  if (state.players.length < 2) {
+    document.getElementById('room-code-wrap').style.display = 'block';
+    document.getElementById('room-code-display').textContent = roomId;
+  } else {
+    document.getElementById('room-code-wrap').style.display = 'none';
+  }
+  document.getElementById('wait-title').textContent = '⚔️ DUEL FOUND!';
+  renderWaitingCards(state.players);
+});
+
+socket.on('phase_change', ({ phase }) => {
+  if (phase === 'picking') {
+    showScreen('secret');
+    buildSecretUI();
+    document.getElementById('secret-status').textContent = 'Waiting for both players to pick their numbers...';
+  }
+});
+
+socket.on('player_ready', ({ id, name }) => {
+  const isMine = id === MY_ID;
+  document.getElementById('secret-status').textContent =
+    isMine ? '✅ Locked in! Waiting for opponent...' : `✅ ${name} has locked in their number! Your turn...`;
+});
+
+socket.on('secret_confirmed', () => {
+  document.getElementById('confirm-secret-btn').textContent = '✅ Locked in! Waiting...';
+  document.getElementById('confirm-secret-btn').style.opacity = '0.6';
+  document.getElementById('confirm-secret-btn').style.pointerEvents = 'none';
+});
+
+socket.on('game_start', (state) => {
+  ROOM.state = state;
+  TURN = state.turn;
+  showScreen('game');
+  initGameUI(state);
+  robSay(TURN === MY_ID ? 'turn_you' : 'turn_opp');
+});
+
+socket.on('guess_result', ({ by, guess, bulls, cows }) => {
+  const isMine = by === MY_ID;
+  addHistEntry(guess, bulls, cows, isMine ? 'my-history' : 'opp-history');
+  if (isMine) {
+    document.getElementById('my-guess-count').textContent =
+      parseInt(document.getElementById('my-guess-count').textContent) + 1;
+    CUR = []; updateDigitRow(); markNumpad();
+    showBCFlash(bulls > 0 ? 'bull' : cows > 0 ? 'cow' : null, bulls, cows);
+    if (bulls > 0) robSay('bull');
+    else if (cows > 0) robSay('cow');
+    else robSay('nothing');
+  } else {
+    document.getElementById('opp-guess-count').textContent =
+      parseInt(document.getElementById('opp-guess-count').textContent) + 1;
+    if (bulls > 0) robSay('myBull');
+    else if (cows > 0) robSay('myCow');
+    else robSay('myNothing');
+  }
+});
+
+socket.on('turn_change', ({ turn }) => {
+  TURN = turn;
+  updateTurnUI();
+  robSay(TURN === MY_ID ? 'turn_you' : 'turn_opp');
+});
+
+socket.on('timer', (t) => {
+  document.getElementById('timer-num').textContent = t;
+  const fill = document.getElementById('timer-fill');
+  fill.style.width = (t / 60 * 100) + '%';
+  fill.className = 'timer-fill' + (t <= 10 ? ' danger' : t <= 20 ? ' warn' : '');
+});
+
+socket.on('game_over', ({ winner, winnerName, secret, guesses }) => {
+  clearTimerUI();
+  const won = winner === MY_ID;
+  const opp = ROOM.state.players.find(p => p.id !== MY_ID);
+  const oppName = opp ? opp.name : 'Opponent';
+  document.getElementById('result-title').textContent = won ? '🎉 YOU WIN!' : '💀 YOU LOSE!';
+  document.getElementById('result-title').className = 'result-title ' + (won ? 'result-win' : 'result-lose');
+  document.getElementById('result-body').innerHTML = won
+    ? `You cracked ${oppName}'s number!<br>Their secret was <b>${secret}</b><br>You needed ${(guesses[MY_ID] || []).length} guesses.`
+    : `${winnerName} cracked your number!<br>Your secret was <b>${MY_SECRET}</b><br>They needed ${(guesses[winner] || []).length} guesses.`;
+  document.getElementById('result-overlay').classList.add('show');
+  document.getElementById('rematch-status').textContent = '';
+  robSay(won ? 'win' : 'lose');
+});
+
+socket.on('chat_msg', (msg) => {
+  addChatLine(msg);
+  if (!msg.system && msg.from !== MY_ID && Math.random() < 0.2) robSay('chat');
+});
+
+socket.on('rematch_vote', ({ count }) => {
+  document.getElementById('rematch-status').textContent = `${count}/2 players want a rematch!`;
+});
+
+socket.on('opponent_left', ({ name }) => {
+  showToast(`${name} left the duel. 🌵`);
+  setTimeout(goLobby, 3000);
+});
+
+socket.on('error_msg', (msg) => { showToast('⚠️ ' + msg); });
+
+// ══════════════════════════════════════════
+// UI FUNCTIONS
+// ══════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function selAv(el, emoji) {
+  document.querySelectorAll('.av-opt').forEach(x => x.classList.remove('sel'));
+  el.classList.add('sel'); ME.avatar = emoji;
+}
+function selDiff(el, n) {
+  document.querySelectorAll('#d3,#d4,#d5').forEach(x => x.classList.remove('sel'));
+  el.classList.add('sel'); ME.digits = n;
+}
+
+function renderWaitingCards(players) {
+  const wrap = document.getElementById('player-cards-wrap');
+  wrap.innerHTML = '';
+  for (let i = 0; i < 2; i++) {
+    const p = players[i];
+    if (p) {
+      const card = document.createElement('div');
+      card.className = 'player-card' + (p.ready ? ' ready' : '');
+      card.innerHTML = `<div class="player-card-av">${p.avatar}</div><div class="player-card-name">${p.name}${p.id === MY_ID ? ' (YOU)' : ''}</div><div class="player-card-status">${p.ready ? '✅ Ready' : '⏳ Joining...'}</div>`;
+      wrap.appendChild(card);
+    } else {
+      const slot = document.createElement('div');
+      slot.className = 'player-slot'; slot.textContent = '⏳ Waiting...';
+      wrap.appendChild(slot);
+    }
+  }
+}
+
+// ── SECRET PICK UI ──
+function buildSecretUI() {
+  SECRET_INPUT = [];
+  const disp = document.getElementById('secret-display');
+  disp.innerHTML = '';
+  const np = document.getElementById('secret-numpad');
+  np.innerHTML = '';
+  for (let i = 0; i < ME.digits; i++) {
+    const d = document.createElement('div');
+    d.className = 'dpick empty'; d.id = `sd${i}`; d.textContent = '?';
+    d.onclick = () => { if (i < SECRET_INPUT.length) { SECRET_INPUT.splice(i, 1); updSecretUI(); } };
+    disp.appendChild(d);
+  }
+  for (let i = 0; i <= 9; i++) {
+    const b = document.createElement('div');
+    b.className = 'snpb'; b.id = `snp${i}`; b.textContent = i;
+    b.onclick = () => {
+      if (SECRET_INPUT.length >= ME.digits || SECRET_INPUT.includes(String(i)) || (SECRET_INPUT.length === 0 && i === 0)) return;
+      SECRET_INPUT.push(String(i)); updSecretUI();
+    };
+    b.addEventListener('touchstart', e => { e.preventDefault(); b.onclick(); }, { passive: false });
+    np.appendChild(b);
+  }
+  const del = document.createElement('div');
+  del.className = 'snpb del'; del.textContent = '⌫';
+  del.onclick = () => { SECRET_INPUT.pop(); updSecretUI(); };
+  del.addEventListener('touchstart', e => { e.preventDefault(); del.onclick(); }, { passive: false });
+  np.appendChild(del);
+}
+
+function updSecretUI() {
+  for (let i = 0; i < ME.digits; i++) {
+    const el = document.getElementById(`sd${i}`);
+    if (!el) continue;
+    if (i < SECRET_INPUT.length) { el.textContent = SECRET_INPUT[i]; el.classList.remove('empty'); }
+    else { el.textContent = '?'; el.classList.add('empty'); }
+  }
+  const btn = document.getElementById('confirm-secret-btn');
+  const ready = SECRET_INPUT.length === ME.digits;
+  btn.style.opacity = ready ? '1' : '.4';
+  btn.style.pointerEvents = ready ? 'auto' : 'none';
+  for (let i = 0; i <= 9; i++) {
+    const el = document.getElementById(`snp${i}`);
+    if (el) el.classList.toggle('used', SECRET_INPUT.includes(String(i)) || (SECRET_INPUT.length === 0 && i === 0));
+  }
+}
+
+function confirmSecret() {
+  MY_SECRET = SECRET_INPUT.join('');
+  socket.emit('set_secret', { secret: MY_SECRET });
+  document.getElementById('my-secret-show') && (document.getElementById('my-secret-show').textContent = MY_SECRET.split('').join(' '));
+}
+
+// ── GAME UI ──
+function initGameUI(state) {
+  const me = state.players.find(p => p.id === MY_ID);
+  const opp = state.players.find(p => p.id !== MY_ID);
+  if (!me || !opp) return;
+
+  document.getElementById('my-av').textContent = me.avatar;
+  document.getElementById('my-name').textContent = me.name;
+  document.getElementById('my-secret-show').textContent = MY_SECRET.split('').join(' ');
+  document.getElementById('opp-av').textContent = opp.avatar;
+  document.getElementById('opp-name').textContent = opp.name;
+
+  document.getElementById('my-guess-count').textContent = '0';
+  document.getElementById('opp-guess-count').textContent = '0';
+  document.getElementById('my-history').innerHTML = '';
+  document.getElementById('opp-history').innerHTML = '';
+  document.getElementById('chat-msgs').innerHTML = '';
+  CUR = []; buildDigitRow(); buildNumpad(); updateTurnUI();
+}
+
+function buildDigitRow() {
+  const c = document.getElementById('digit-row'); c.innerHTML = '';
+  for (let i = 0; i < ME.digits; i++) {
+    const d = document.createElement('div');
+    d.className = 'dbox empty'; d.id = `dg${i}`; d.textContent = '?';
+    d.onclick = () => { if (i < CUR.length) { CUR.splice(i, 1); updateDigitRow(); markNumpad(); } };
+    c.appendChild(d);
+  }
+}
+function updateDigitRow() {
+  for (let i = 0; i < ME.digits; i++) {
+    const el = document.getElementById(`dg${i}`); if (!el) continue;
+    if (i < CUR.length) { el.textContent = CUR[i]; el.classList.remove('empty'); }
+    else { el.textContent = '?'; el.classList.add('empty'); }
+  }
+}
+function buildNumpad() {
+  const c = document.getElementById('numpad'); c.innerHTML = '';
+  for (let i = 0; i <= 9; i++) {
+    const b = document.createElement('div');
+    b.className = 'npb'; b.id = `np${i}`; b.textContent = i;
+    const addD = () => {
+      if (CUR.length >= ME.digits || CUR.includes(String(i)) || (CUR.length === 0 && i === 0)) return;
+      CUR.push(String(i)); updateDigitRow(); markNumpad();
+    };
+    b.onclick = addD;
+    b.addEventListener('touchstart', e => { e.preventDefault(); addD(); }, { passive: false });
+    c.appendChild(b);
+  }
+  const del = document.createElement('div');
+  del.className = 'npb del'; del.textContent = '⌫';
+  del.onclick = () => { CUR.pop(); updateDigitRow(); markNumpad(); };
+  del.addEventListener('touchstart', e => { e.preventDefault(); del.onclick(); }, { passive: false });
+  c.appendChild(del);
+}
+function markNumpad() {
+  for (let i = 0; i <= 9; i++) {
+    const el = document.getElementById(`np${i}`); if (!el) continue;
+    el.classList.toggle('used', CUR.includes(String(i)) || (CUR.length === 0 && i === 0));
+  }
+}
+
+function updateTurnUI() {
+  const isMyTurn = TURN === MY_ID;
+  const fireBtn = document.getElementById('fire-btn');
+  if (fireBtn) { fireBtn.disabled = !isMyTurn; fireBtn.textContent = isMyTurn ? '🔫 FIRE!' : '⏳ Opponent\'s turn...'; }
+  const myInd = document.getElementById('my-turn-indicator');
+  const oppInd = document.getElementById('opp-turn-indicator');
+  if (myInd) { myInd.textContent = isMyTurn ? '← YOUR TURN' : ''; myInd.className = 'turn-indicator ' + (isMyTurn ? 'active' : 'waiting'); }
+  if (oppInd) { oppInd.textContent = !isMyTurn ? 'THEIR TURN →' : ''; oppInd.className = 'turn-indicator ' + (!isMyTurn ? 'active' : 'waiting'); }
+}
+
+function clearTimerUI() {
+  const fill = document.getElementById('timer-fill');
+  if (fill) fill.style.width = '0%';
+  document.getElementById('timer-num').textContent = '--';
+}
+
+function addHistEntry(guess, bulls, cows, containerId) {
+  const c = document.getElementById(containerId); if (!c) return;
+  const prev = c.querySelector('.latest'); if (prev) prev.classList.remove('latest');
+  const e = document.createElement('div'); e.className = 'hent latest';
+  e.innerHTML = `<span class="hguess">${guess.split('').join(' ')}</span><span class="hres"><span class="bt">🐂${bulls}</span><span class="cw">🐄${cows}</span></span>`;
+  c.appendChild(e); c.scrollTop = c.scrollHeight;
+}
+
+function addChatLine(msg) {
+  const c = document.getElementById('chat-msgs'); if (!c) return;
+  const div = document.createElement('div');
+  if (msg.system) { div.className = 'chat-line system'; div.textContent = msg.text; }
+  else if (msg.from === MY_ID) { div.className = 'chat-line mine'; div.innerHTML = `<b>You:</b> ${escapeHtml(msg.text)}`; }
+  else { div.className = 'chat-line'; div.innerHTML = `<b>${escapeHtml(msg.name)}:</b> ${escapeHtml(msg.text)}`; }
+  c.appendChild(div); c.scrollTop = c.scrollHeight;
+}
+
+function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showBCFlash(type, bulls, cows) {
+  if (!type) return;
+  const fl = document.getElementById('bc-flash');
+  const txt = document.getElementById('bc-text');
+  fl.className = ''; void fl.offsetWidth;
+  fl.classList.add(type === 'bull' ? 'bull-f' : 'cow-f');
+  const emoji = type === 'bull' ? '🐂' : '🐄';
+  const count = type === 'bull' ? bulls : cows;
+  txt.textContent = emoji.repeat(Math.min(count, 5)) + ' ' + count + ' ' + (type === 'bull' ? 'BULL' : 'COW') + (count > 1 ? 'S' : '') + '!';
+  txt.style.color = type === 'bull' ? '#e67e22' : '#3498db';
+  fl.style.opacity = '1';
+  setTimeout(() => { fl.style.opacity = '0'; fl.className = ''; }, 1500);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// ══════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════
+function findMatch() {
+  ME.name = document.getElementById('player-name').value.trim() || 'Cowpoke';
+  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
+  socket.emit('find_match');
+}
+
+function showCreatePrivate() {
+  document.getElementById('private-create-panel').style.display =
+    document.getElementById('private-create-panel').style.display === 'none' ? 'block' : 'none';
+  document.getElementById('private-join-panel').style.display = 'none';
+}
+function showJoinPrivate() {
+  document.getElementById('private-join-panel').style.display =
+    document.getElementById('private-join-panel').style.display === 'none' ? 'block' : 'none';
+  document.getElementById('private-create-panel').style.display = 'none';
+}
+
+function createPrivate() {
+  ME.name = document.getElementById('player-name').value.trim() || 'Cowpoke';
+  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
+  const pw = document.getElementById('create-password').value.trim();
+  socket.emit('create_private', { password: pw || null });
+}
+
+function joinPrivate() {
+  ME.name = document.getElementById('player-name').value.trim() || 'Cowpoke';
+  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
+  const code = document.getElementById('join-code').value.trim();
+  const pw = document.getElementById('join-password').value.trim();
+  if (!code) { showToast('Enter a room code!'); return; }
+  socket.emit('join_private', { roomId: code, password: pw || null });
+}
+
+function cancelWait() {
+  socket.emit('cancel_queue');
+  goLobby();
+}
+
+function makeGuess() {
+  if (CUR.length !== ME.digits || TURN !== MY_ID) return;
+  socket.emit('make_guess', { guess: CUR.join('') });
+}
+
+function sendChat() {
+  const inp = document.getElementById('chat-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  socket.emit('chat', { text });
+  inp.value = '';
+}
+
+function requestRematch() {
+  socket.emit('request_rematch');
+  document.getElementById('rematch-status').textContent = '1/2 voted for rematch...';
+}
+
+function goLobby() {
+  document.getElementById('result-overlay').classList.remove('show');
+  showScreen('lobby');
+  ROOM = { id: null, state: null }; CUR = []; MY_SECRET = ''; SECRET_INPUT = []; TURN = null;
+}
+
+function toggleTheme() {
+  nightMode = !nightMode;
+  document.documentElement.setAttribute('data-theme', nightMode ? 'night' : 'day');
+  document.getElementById('theme-btn').textContent = nightMode ? '☀️ DAY' : '🌙 NIGHT';
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (document.getElementById('screen-game').classList.contains('active')) {
+    if (e.key >= '0' && e.key <= '9' && TURN === MY_ID) {
+      const i = parseInt(e.key);
+      if (CUR.length < ME.digits && !CUR.includes(String(i)) && !(CUR.length === 0 && i === 0)) { CUR.push(String(i)); updateDigitRow(); markNumpad(); }
+    }
+    if (e.key === 'Backspace' && document.activeElement.id !== 'chat-input') { CUR.pop(); updateDigitRow(); markNumpad(); }
+    if (e.key === 'Enter' && document.activeElement.id !== 'chat-input') makeGuess();
+  }
+});
+</script>
+</body>
+</html>
