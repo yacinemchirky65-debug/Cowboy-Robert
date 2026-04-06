@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>🤠 Cowboy Robert's Bulls & Cows — Multiplayer</title>
+<title>🤠 Cowboy Robert's Bulls & Cows</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -17,168 +17,273 @@
   --ui-bg:#1e1410;--ui-text:#e8c97a;--ui-border:#c4a24a;--cream:#1e1410;--dark-brown:#e8c97a;--brown:#c4a24a;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'VT323',monospace;min-height:100vh;overflow-x:hidden;background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 40%,var(--sky3) 70%,var(--sky4) 100%);transition:background 1s}
-body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0,rgba(0,0,0,.03) 1px,transparent 1px,transparent 2px);pointer-events:none;z-index:9999}
-.ground{position:fixed;bottom:0;left:0;right:0;height:60px;background:linear-gradient(180deg,#b8860b,#8b6914);border-top:4px solid var(--dark-brown);z-index:1}
 
-/* PIXEL BOX */
+/* ── FULLSCREEN SCREEN SYSTEM — no scroll between steps ── */
+body{font-family:'VT323',monospace;width:100vw;height:100vh;overflow:hidden;background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 40%,var(--sky3) 70%,var(--sky4) 100%);transition:background 1s}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.03) 0,rgba(0,0,0,.03) 1px,transparent 1px,transparent 2px);pointer-events:none;z-index:9999}
+
+.screen{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:48px 10px 10px;
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;pointer-events:none;transform:translateX(40px);
+  transition:opacity .3s ease,transform .3s ease;
+  z-index:10;
+}
+.screen.active{opacity:1;pointer-events:auto;transform:translateX(0)}
+.screen.exit-left{opacity:0;transform:translateX(-40px);pointer-events:none}
+
+/* Scrollbar inside screens */
+.screen::-webkit-scrollbar{width:4px}
+.screen::-webkit-scrollbar-track{background:transparent}
+.screen::-webkit-scrollbar-thumb{background:rgba(232,201,122,.4);border-radius:2px}
+
+/* The game screen uses its own inner scroll area, body stays fixed */
+#screen-game{padding-top:48px;padding-bottom:10px;justify-content:flex-start}
+
+.ground{position:fixed;bottom:0;left:0;right:0;height:50px;background:linear-gradient(180deg,#b8860b,#8b6914);border-top:3px solid var(--dark-brown);z-index:1}
+
+/* ── TOP BAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(61,31,10,.96);border-bottom:2px solid var(--sand);padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;height:40px}
+.topbar-left{display:flex;align-items:center;gap:6px}
+.topbar-title{font-family:'Press Start 2P';font-size:8px;color:var(--sand);text-shadow:1px 1px 0 var(--dark-brown)}
+.back-btn{font-family:'Press Start 2P';font-size:6px;padding:3px 7px;background:transparent;color:var(--sand);border:1px solid rgba(232,201,122,.4);cursor:pointer;display:none}
+.back-btn:hover{border-color:var(--sand)}
+.back-btn.show{display:block}
+.topbar-right{display:flex;gap:4px;align-items:center}
+.ctrl-btn{font-family:'Press Start 2P';font-size:6px;padding:3px 7px;background:rgba(61,31,10,.9);color:var(--sand);border:1.5px solid var(--sand);cursor:pointer;white-space:nowrap}
+.ctrl-btn:hover{background:var(--dark-brown)}
+
+/* ── PIXEL BOX ── */
 .pbox{background:var(--ui-bg);border:3px solid var(--ui-border);box-shadow:4px 4px 0 var(--dark-brown)}
 
-/* TOP BAR */
-.topbar{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(61,31,10,.95);border-bottom:2px solid var(--sand);padding:6px 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
-.topbar-title{font-family:'Press Start 2P';font-size:9px;color:var(--sand);text-shadow:2px 2px 0 var(--dark-brown)}
-.topbar-group{display:flex;gap:4px;align-items:center}
-.ctrl-btn{font-family:'Press Start 2P';font-size:6px;padding:4px 7px;background:rgba(61,31,10,.9);color:var(--sand);border:2px solid var(--sand);cursor:pointer}
-.ctrl-btn:hover{background:var(--dark-brown)}
-.ctrl-btn.active{background:var(--brown);border-color:var(--sand)}
-
-/* BUTTONS */
-.btn{font-family:'Press Start 2P';font-size:9px;padding:9px 14px;background:var(--brown);color:var(--sand);border:3px solid var(--dark-brown);box-shadow:3px 3px 0 var(--dark-brown);cursor:pointer;text-transform:uppercase;transition:transform .05s,box-shadow .05s;display:inline-block;text-align:center}
+/* ── GENERIC ── */
+.btn{font-family:'Press Start 2P';font-size:9px;padding:10px 14px;background:var(--brown);color:var(--sand);border:3px solid var(--dark-brown);box-shadow:3px 3px 0 var(--dark-brown);cursor:pointer;text-transform:uppercase;transition:transform .05s,box-shadow .05s;width:100%;display:block;text-align:center}
 .btn:hover{background:var(--dark-brown)}.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--dark-brown)}
 .btn-green{background:#27ae60;color:#fff}.btn-green:hover{background:#1e8449}
 .btn-red{background:#c0392b;color:#fff}.btn-red:hover{background:#922b21}
 .btn-blue{background:#2980b9;color:#fff}.btn-blue:hover{background:#1a6090}
+.btn-orange{background:#d35400;color:#fff}.btn-orange:hover{background:#b44600}
 .btn-sm{font-size:7px;padding:6px 10px}
-.btn-full{width:100%;display:block}
-
-/* SCREENS */
-.screen{display:none;position:relative;z-index:10;min-height:100vh;padding:55px 12px 80px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px}
-.screen.active{display:flex}
-
-/* LOBBY */
-.lobby-box{width:100%;max-width:440px;padding:18px}
-.lobby-title{font-family:'Press Start 2P';font-size:13px;color:var(--ui-text);text-align:center;margin-bottom:14px;line-height:1.8;text-shadow:2px 2px 0 var(--sand)}
+.btn-inline{width:auto;display:inline-block}
+.slabel{font-family:'Press Start 2P';font-size:7px;color:var(--ui-text);padding:4px 8px;border-bottom:2px solid var(--brown);background:rgba(196,162,74,.15);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.gap{height:10px;flex-shrink:0}
 .input-field{width:100%;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'VT323';font-size:20px;padding:8px 10px;outline:none}
 .input-field::placeholder{color:rgba(232,201,122,.4)}
-.input-field:focus{border-color:var(--sand);box-shadow:0 0 0 2px rgba(232,201,122,.3)}
-.slabel{font-family:'Press Start 2P';font-size:7px;color:var(--ui-text);padding:4px 0;margin-bottom:4px;display:block}
-.divider{border:none;border-top:2px solid var(--ui-border);margin:14px 0}
-.avatar-row{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
-.av-opt{width:44px;height:44px;background:var(--ui-bg);border:3px solid var(--brown);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;transition:all .1s}
+.input-field:focus{box-shadow:0 0 0 2px rgba(232,201,122,.3)}
+
+/* ──────────────────────────────────────────
+   SCREEN 1 — HOME
+────────────────────────────────────────── */
+#screen-home{gap:14px;padding-top:56px}
+.home-title{font-family:'Press Start 2P';font-size:clamp(11px,3.5vw,19px);color:var(--dark-brown);text-align:center;text-shadow:3px 3px 0 var(--sand);line-height:1.9}
+.home-subtitle{font-size:18px;color:var(--brown);text-align:center}
+.home-box{width:100%;max-width:400px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.mode-btn{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--ui-bg);border:3px solid var(--ui-border);cursor:pointer;text-align:left;width:100%;transition:background .1s}
+.mode-btn:hover{background:var(--sand)}
+.mode-icon{font-size:32px;flex-shrink:0}
+.mode-text{flex:1}
+.mode-title{font-family:'Press Start 2P';font-size:8px;color:var(--ui-text);margin-bottom:3px}
+.mode-desc{font-size:14px;color:var(--brown);line-height:1.4}
+
+/* ──────────────────────────────────────────
+   SCREEN 2 — PROFILE (name + avatar)
+────────────────────────────────────────── */
+#screen-profile{gap:12px}
+.profile-box{width:100%;max-width:400px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.step-title{font-family:'Press Start 2P';font-size:9px;color:var(--ui-text);text-align:center;margin-bottom:4px;line-height:1.7}
+.av-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.av-opt{aspect-ratio:1;background:var(--ui-bg);border:3px solid var(--brown);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}
 .av-opt:hover,.av-opt.sel{background:var(--sand);border-color:var(--red);box-shadow:2px 2px 0 var(--red)}
 
-/* WAITING ROOM */
-.waiting-box{width:100%;max-width:500px;padding:18px;text-align:center}
-.room-code{font-family:'Press Start 2P';font-size:22px;color:var(--sand);background:var(--dark-brown);padding:10px 20px;border:3px solid var(--sand);letter-spacing:4px;display:inline-block;margin:8px 0}
-.player-cards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
-.player-card{padding:10px 16px;border:3px solid var(--ui-border);background:var(--ui-bg);text-align:center;min-width:120px}
+/* ──────────────────────────────────────────
+   SCREEN 3 — DIFFICULTY
+────────────────────────────────────────── */
+#screen-difficulty{gap:12px}
+.diff-box{width:100%;max-width:400px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.diff-row{display:flex;align-items:center;gap:10px;padding:12px;background:var(--ui-bg);border:3px solid var(--ui-border);cursor:pointer}
+.diff-row:hover,.diff-row.sel{background:var(--sand);border-color:var(--red)}
+.diff-row-icon{font-size:26px}
+.diff-row-name{font-family:'Press Start 2P';font-size:8px;color:var(--ui-text);margin-bottom:3px}
+.diff-row-desc{font-size:14px;color:var(--brown)}
+
+/* ──────────────────────────────────────────
+   SCREEN 4 — LOBBY (multiplayer only)
+────────────────────────────────────────── */
+#screen-lobby{gap:12px}
+.lobby-box{width:100%;max-width:420px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.lobby-section-title{font-family:'Press Start 2P';font-size:8px;color:var(--ui-text);text-align:center;margin-bottom:2px}
+.or-divider{text-align:center;font-size:15px;color:var(--brown);margin:4px 0;position:relative}
+.or-divider::before,.or-divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--ui-border);opacity:.3}
+.or-divider::before{left:0}.or-divider::after{right:0}
+.collapsible-panel{display:none;flex-direction:column;gap:7px;padding:10px;background:rgba(0,0,0,.06);border:2px solid var(--ui-border)}
+.collapsible-panel.open{display:flex}
+.room-code-display{font-family:'Press Start 2P';font-size:20px;color:var(--sand);background:var(--dark-brown);padding:10px 18px;border:3px solid var(--sand);letter-spacing:4px;text-align:center;cursor:pointer}
+.copy-hint{font-size:14px;color:var(--brown);text-align:center}
+
+/* ──────────────────────────────────────────
+   SCREEN 5 — WAITING / FOUND DUEL
+────────────────────────────────────────── */
+#screen-waiting{gap:14px;justify-content:center}
+.waiting-box{width:100%;max-width:420px;padding:20px;text-align:center}
+.waiting-title{font-family:'Press Start 2P';font-size:10px;color:var(--ui-text);margin-bottom:12px;line-height:1.8}
+.player-cards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.player-card{padding:12px 16px;border:3px solid var(--ui-border);background:var(--ui-bg);text-align:center;min-width:120px;flex:1}
 .player-card.ready{border-color:var(--green);background:rgba(39,174,96,.08)}
-.player-card-av{font-size:32px;margin-bottom:4px}
+.player-card-av{font-size:34px;margin-bottom:6px}
 .player-card-name{font-family:'Press Start 2P';font-size:8px;color:var(--ui-text)}
-.player-card-status{font-size:14px;color:var(--green);margin-top:4px}
-.player-slot{border:3px dashed rgba(232,201,122,.3);background:rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;min-width:120px;padding:10px;color:rgba(232,201,122,.4);font-size:14px}
+.player-card-status{font-size:14px;color:var(--sand);margin-top:5px}
+.player-card-status.ok{color:var(--green)}
+.player-slot{border:3px dashed rgba(232,201,122,.25);background:rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;min-width:120px;flex:1;padding:20px;color:rgba(232,201,122,.4);font-size:18px}
+.pulse-dot{display:inline-block;animation:pulseDot 1s ease infinite alternate}
+@keyframes pulseDot{from{opacity:.3;transform:scale(.8)}to{opacity:1;transform:scale(1.1)}}
 
-/* SECRET PICK */
-.secret-box{width:100%;max-width:440px;padding:16px}
-.digit-pick-row{display:flex;gap:5px;justify-content:center;margin:8px 0}
-.dpick{width:48px;height:58px;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'Press Start 2P';font-size:18px;text-align:center;line-height:52px;cursor:pointer}
-.dpick.empty{color:rgba(232,201,122,.2)}
-.snumpad{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0}
-.snpb{height:42px;background:var(--brown);border:2px solid var(--dark-brown);color:var(--sand);font-family:'VT323';font-size:24px;cursor:pointer;text-align:center;line-height:38px;box-shadow:2px 2px 0 var(--dark-brown)}
+/* ──────────────────────────────────────────
+   SCREEN 6 — SECRET PICK
+────────────────────────────────────────── */
+#screen-secret{gap:12px;justify-content:center}
+.secret-box{width:100%;max-width:400px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.secret-digits{display:flex;gap:5px;justify-content:center}
+.sdbox{width:50px;height:60px;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'Press Start 2P';font-size:18px;text-align:center;line-height:54px;cursor:pointer;flex-shrink:0}
+.sdbox.empty{color:rgba(232,201,122,.2)}
+.snumpad{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.snpb{height:44px;background:var(--brown);border:2px solid var(--dark-brown);color:var(--sand);font-family:'VT323';font-size:24px;cursor:pointer;text-align:center;line-height:40px;box-shadow:2px 2px 0 var(--dark-brown)}
 .snpb:hover,.snpb:active{background:var(--dark-brown)}
-.snpb.used{background:#222;color:#444;cursor:not-allowed;box-shadow:none}
-.snpb.del{background:var(--red)}
+.snpb.used{background:#222;color:#333;cursor:not-allowed;box-shadow:none}
+.snpb.del{background:var(--red);color:#fff}
+.secret-hint{font-size:15px;color:var(--brown);text-align:center;line-height:1.5}
 
-/* GAME AREA */
-.game-wrap{width:100%;max-width:800px;display:flex;flex-direction:column;gap:10px}
-.game-hud{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;flex-wrap:wrap;gap:6px}
-.hud-item{display:flex;flex-direction:column;align-items:center}
-.hud-label{font-family:'Press Start 2P';font-size:6px;color:var(--brown);margin-bottom:2px}
-.hud-val{font-size:20px;color:var(--ui-text)}
-.timer-bar{height:8px;background:var(--dark-brown);border:2px solid var(--sand);overflow:hidden;flex:1;min-width:80px;margin:0 8px}
+/* ──────────────────────────────────────────
+   SCREEN 7 — GAME
+────────────────────────────────────────── */
+#screen-game{align-items:stretch;padding:48px 8px 55px}
+.game-inner{display:flex;flex-direction:column;gap:8px;width:100%;max-width:820px;margin:0 auto}
+
+/* Robert narrator bar */
+.narrator-bar{display:flex;align-items:center;gap:8px;padding:8px 10px;flex-shrink:0}
+.narrator-av{font-size:30px;flex-shrink:0}
+.narrator-bubble{background:var(--ui-bg);border:2px solid var(--ui-border);padding:6px 10px;font-size:15px;color:var(--ui-text);line-height:1.4;position:relative;flex:1;box-shadow:2px 2px 0 var(--dark-brown)}
+.narrator-bubble::before{content:'';position:absolute;left:-11px;top:8px;border:5px solid transparent;border-right-color:var(--ui-border)}
+.narrator-bubble::after{content:'';position:absolute;left:-7px;top:10px;border:3px solid transparent;border-right-color:var(--ui-bg)}
+
+/* HUD */
+.game-hud{display:flex;align-items:center;justify-content:space-between;padding:5px 10px;gap:6px;flex-shrink:0}
+.hud-stat{display:flex;flex-direction:column;align-items:center}
+.hud-lbl{font-family:'Press Start 2P';font-size:5px;color:var(--brown);margin-bottom:1px}
+.hud-val{font-size:20px;color:var(--ui-text);font-family:'Press Start 2P';font-size:12px}
+.timer-wrap{flex:1;display:flex;align-items:center;gap:6px;padding:0 6px}
+.timer-bar{flex:1;height:8px;background:var(--dark-brown);border:2px solid var(--sand);overflow:hidden}
 .timer-fill{height:100%;background:var(--green);transition:width 1s linear}
-.timer-fill.warn{background:#e67e22}
-.timer-fill.danger{background:var(--red)}
+.timer-fill.warn{background:#e67e22}.timer-fill.danger{background:var(--red)}
+.timer-num{font-family:'Press Start 2P';font-size:10px;color:var(--ui-text);min-width:28px;text-align:right}
 
-/* PLAYERS SIDE BY SIDE */
-.duel-area{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start}
-.duel-side{display:flex;flex-direction:column;gap:8px}
-.vs-badge{font-family:'Press Start 2P';font-size:16px;color:var(--red);text-shadow:2px 2px 0 var(--dark-brown);animation:pulse 1s infinite alternate;padding-top:16px;text-align:center}
-@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.1)}}
-.player-header{display:flex;align-items:center;gap:8px;padding:8px}
-.player-av-large{font-size:32px}
-.player-name-block{flex:1}
-.player-name{font-family:'Press Start 2P';font-size:8px;color:var(--ui-text);margin-bottom:2px}
-.player-tag{font-size:13px;color:var(--brown)}
-.you-badge{font-family:'Press Start 2P';font-size:6px;color:var(--sand);background:var(--brown);padding:2px 5px}
-.turn-indicator{font-family:'Press Start 2P';font-size:6px;padding:3px 6px;animation:pulse .7s infinite alternate}
-.turn-indicator.active{color:var(--green);background:rgba(39,174,96,.12)}
-.turn-indicator.waiting{color:var(--brown)}
+/* Two-column duel layout */
+.duel-columns{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:start;flex-shrink:0}
+.vs-sep{font-family:'Press Start 2P';font-size:13px;color:var(--red);text-shadow:2px 2px 0 var(--dark-brown);padding-top:10px;animation:pulse 1s infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.08)}}
+.duel-col{display:flex;flex-direction:column;gap:6px}
+.duel-player-header{display:flex;align-items:center;gap:7px;padding:7px 8px}
+.duel-av{font-size:28px;flex-shrink:0}
+.duel-name{font-family:'Press Start 2P';font-size:7px;color:var(--ui-text)}
+.duel-tag{font-size:13px;color:var(--brown);margin-top:2px}
+.you-pill{font-family:'Press Start 2P';font-size:5px;color:var(--sand);background:var(--brown);padding:2px 4px;margin-left:4px}
+.turn-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px;background:transparent;border:2px solid var(--brown)}
+.turn-dot.active{background:var(--green);border-color:var(--green);box-shadow:0 0 6px rgba(39,174,96,.6)}
 
-/* GUESS INPUT */
-.guess-area{padding:10px}
-.digit-row{display:flex;gap:5px;justify-content:center;margin-bottom:8px}
-.dbox{width:44px;height:52px;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'Press Start 2P';font-size:16px;text-align:center;line-height:46px;cursor:pointer}
+/* Guess input */
+.guess-input-area{padding:8px}
+.digit-row{display:flex;gap:4px;justify-content:center;margin-bottom:7px}
+.dbox{width:42px;height:50px;background:var(--dark-brown);border:3px solid var(--sand);color:var(--sand);font-family:'Press Start 2P';font-size:15px;text-align:center;line-height:44px;cursor:pointer;flex-shrink:0}
 .dbox.empty{color:rgba(232,201,122,.2)}.dbox:hover{background:#4a2810}
-.numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:8px}
-.npb{height:38px;background:var(--brown);border:2px solid var(--dark-brown);color:var(--sand);font-family:'VT323';font-size:22px;cursor:pointer;text-align:center;line-height:34px;box-shadow:2px 2px 0 var(--dark-brown)}
+.numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:7px}
+.npb{height:36px;background:var(--brown);border:2px solid var(--dark-brown);color:var(--sand);font-family:'VT323';font-size:21px;cursor:pointer;text-align:center;line-height:32px;box-shadow:2px 2px 0 var(--dark-brown)}
 .npb:hover,.npb:active{background:var(--dark-brown)}
 .npb.used{background:#2a1a0a;color:#3a2a1a;cursor:not-allowed;box-shadow:none}
 .npb.del{background:var(--red);color:#fff}
-.fire-btn{width:100%;font-size:10px}
-.fire-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.fire-btn{width:100%;font-size:9px}
+.fire-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;transform:none !important;box-shadow:3px 3px 0 var(--dark-brown) !important}
 
-/* HISTORY */
-.hist-scroll{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;padding:5px}
-.hist-scroll::-webkit-scrollbar{width:5px}.hist-scroll::-webkit-scrollbar-track{background:var(--dark-brown)}.hist-scroll::-webkit-scrollbar-thumb{background:var(--sand)}
-.hent{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:rgba(0,0,0,.1);border-left:3px solid var(--sand);animation:slideIn .2s ease}
+/* Suspect list */
+.susp-list{display:flex;gap:3px;flex-wrap:wrap;padding:5px}
+.susp-d{width:28px;height:28px;background:var(--dark-brown);color:var(--sand);font-family:'Press Start 2P';font-size:9px;text-align:center;line-height:24px;border:2px solid var(--sand);cursor:pointer;user-select:none;transition:all .15s;flex-shrink:0}
+.susp-d.crossed{background:#1a0a0a;color:#3a1a1a;text-decoration:line-through;border-color:#3a1a1a}
+.susp-d.present{background:#0a2a0a;color:#6f6;border-color:#6f6}
+
+/* Position tracker */
+.pos-track-row{display:flex;gap:4px;justify-content:center;padding:5px 5px 22px;flex-wrap:wrap}
+.pos-slot{width:42px;height:50px;background:rgba(0,0,0,.25);border:2px dashed rgba(232,201,122,.35);color:rgba(232,201,122,.3);font-family:'Press Start 2P';font-size:14px;text-align:center;line-height:46px;position:relative;transition:all .15s;flex-shrink:0}
+.pos-slot.drag-over{background:rgba(232,201,122,.15);border:2px solid var(--sand)}
+.pos-slot.filled{background:rgba(39,174,96,.18);border:2px solid #6f6;color:#6f6}
+.pos-slot-lbl{position:absolute;bottom:-18px;left:0;right:0;font-family:'Press Start 2P';font-size:5px;color:var(--brown);text-align:center}
+.drag-tray{display:flex;gap:3px;flex-wrap:wrap;padding:4px 5px;background:rgba(0,0,0,.12);border:1px dashed var(--brown);min-height:30px}
+.drag-num{width:26px;height:26px;background:var(--brown);color:var(--sand);font-family:'Press Start 2P';font-size:9px;text-align:center;line-height:22px;border:2px solid var(--sand);cursor:grab;user-select:none;flex-shrink:0}
+.drag-num:active{cursor:grabbing;opacity:.7}
+
+/* History */
+.hist-scroll{max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;padding:4px}
+.hist-scroll::-webkit-scrollbar{width:4px}.hist-scroll::-webkit-scrollbar-track{background:var(--dark-brown)}.hist-scroll::-webkit-scrollbar-thumb{background:var(--sand)}
+.hent{display:flex;justify-content:space-between;align-items:center;padding:3px 7px;background:rgba(0,0,0,.1);border-left:3px solid var(--sand);animation:slideIn .2s ease;flex-shrink:0}
 .hent.latest{border-left-color:var(--red);background:rgba(192,57,43,.1)}
-@keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
-.hguess{font-family:'Press Start 2P';font-size:11px;letter-spacing:3px;color:var(--ui-text)}
-.hres{display:flex;gap:6px;font-size:14px}
+@keyframes slideIn{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
+.hguess{font-family:'Press Start 2P';font-size:10px;letter-spacing:3px;color:var(--ui-text)}
+.hres{display:flex;gap:5px;font-size:13px}
 .bt{color:#e67e22}.cw{color:#3498db}
-.slabel{font-family:'Press Start 2P';font-size:7px;color:var(--ui-text);padding:4px 8px;border-bottom:2px solid var(--brown);background:rgba(196,162,74,.15);display:flex;justify-content:space-between;align-items:center}
 
-/* CHAT */
-.chat-panel{padding:0}
-.chat-msgs{max-height:140px;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:4px;background:rgba(0,0,0,.1)}
-.chat-msgs::-webkit-scrollbar{width:4px}.chat-msgs::-webkit-scrollbar-track{background:var(--dark-brown)}.chat-msgs::-webkit-scrollbar-thumb{background:var(--sand)}
-.chat-line{font-size:15px;line-height:1.4;color:var(--ui-text);word-break:break-word}
-.chat-line.system{color:var(--sand);font-style:italic;font-size:13px}
+/* Chat */
+.chat-msgs{max-height:110px;overflow-y:auto;padding:5px;display:flex;flex-direction:column;gap:3px;background:rgba(0,0,0,.08)}
+.chat-msgs::-webkit-scrollbar{width:4px}.chat-msgs::-webkit-scrollbar-track{background:transparent}.chat-msgs::-webkit-scrollbar-thumb{background:var(--sand)}
+.chat-line{font-size:14px;color:var(--ui-text);word-break:break-word;line-height:1.4}
+.chat-line.sys{color:rgba(232,201,122,.6);font-size:13px}
 .chat-line.mine{color:var(--green)}
 .chat-line b{color:var(--sand)}
-.chat-input-row{display:flex;gap:0;border-top:2px solid var(--ui-border)}
-.chat-input{flex:1;background:var(--dark-brown);border:none;color:var(--sand);font-family:'VT323';font-size:18px;padding:6px 8px;outline:none}
-.chat-send{font-family:'Press Start 2P';font-size:7px;padding:6px 10px;background:var(--brown);color:var(--sand);border:none;border-left:2px solid var(--ui-border);cursor:pointer}
-.chat-send:hover{background:var(--dark-brown)}
+.chat-row{display:flex;border-top:2px solid var(--ui-border)}
+.chat-inp{flex:1;background:var(--dark-brown);border:none;color:var(--sand);font-family:'VT323';font-size:17px;padding:5px 8px;outline:none}
+.chat-send-btn{font-family:'Press Start 2P';font-size:6px;padding:5px 8px;background:var(--brown);color:var(--sand);border:none;border-left:2px solid var(--ui-border);cursor:pointer;flex-shrink:0}
+.chat-send-btn:hover{background:var(--dark-brown)}
 
-/* ROBERT NARRATOR */
-.robert-narrator{display:flex;align-items:flex-start;gap:10px;padding:10px 12px}
-.rnarrator-av{font-size:36px;flex-shrink:0}
-.rnarrator-bubble{background:var(--ui-bg);border:2px solid var(--ui-border);padding:7px 10px;font-size:15px;color:var(--ui-text);line-height:1.45;position:relative;flex:1;box-shadow:2px 2px 0 var(--dark-brown)}
-.rnarrator-bubble::before{content:'';position:absolute;left:-12px;top:10px;border:6px solid transparent;border-right-color:var(--ui-border)}
-.rnarrator-bubble::after{content:'';position:absolute;left:-8px;top:12px;border:4px solid transparent;border-right-color:var(--ui-bg)}
-
-/* BC FLASH */
+/* ── BC FLASH ── */
 #bc-flash{position:fixed;inset:0;z-index:9500;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .1s}
-.bc-inner{font-family:'Press Start 2P';font-size:clamp(36px,10vw,80px);text-shadow:0 0 30px currentColor,4px 4px 0 rgba(0,0,0,.5);animation:bcPop .7s ease forwards}
+.bc-inner{font-family:'Press Start 2P';font-size:clamp(32px,9vw,74px);text-shadow:0 0 28px currentColor,4px 4px 0 rgba(0,0,0,.5);animation:bcPop .7s ease forwards}
 @keyframes bcPop{0%{transform:scale(0) rotate(-15deg);opacity:0}40%{transform:scale(1.3) rotate(5deg);opacity:1}70%{transform:scale(.95) rotate(-2deg);opacity:1}100%{transform:scale(1.1) rotate(0);opacity:0}}
-#bc-flash.bull-f{background:rgba(230,126,34,.18)}
-#bc-flash.cow-f{background:rgba(52,152,219,.18)}
+#bc-flash.bull-f{background:rgba(230,126,34,.16)}
+#bc-flash.cow-f{background:rgba(52,152,219,.16)}
 
-/* RESULT */
-.result-overlay{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.75);align-items:center;justify-content:center}
+/* ── RESULT OVERLAY ── */
+.result-overlay{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.78);align-items:center;justify-content:center;padding:10px}
 .result-overlay.show{display:flex}
-.result-box{padding:28px;text-align:center;max-width:420px;width:92%;animation:popIn .3s ease}
+.result-box{padding:24px;text-align:center;max-width:410px;width:100%;animation:popIn .3s ease}
 @keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
-.result-title{font-family:'Press Start 2P';font-size:16px;margin-bottom:12px;text-shadow:2px 2px 0 var(--dark-brown)}
-.result-win{color:var(--sand)}.result-lose{color:#e74c3c}.result-draw{color:var(--sand)}
-.result-body{font-size:19px;color:var(--ui-text);margin-bottom:14px;line-height:1.65}
+.result-title{font-family:'Press Start 2P';font-size:15px;margin-bottom:12px;text-shadow:2px 2px 0 var(--dark-brown);line-height:1.6}
+.result-win{color:var(--sand)}.result-lose{color:#e74c3c}
+.result-body{font-size:18px;color:var(--ui-text);margin-bottom:14px;line-height:1.7}
+.result-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.result-btns .btn{width:auto;flex:1;min-width:100px}
 
-/* STATUS / TOAST */
-#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9000;font-family:'Press Start 2P';font-size:8px;background:var(--dark-brown);color:var(--sand);border:2px solid var(--sand);padding:8px 16px;display:none;animation:popIn .2s ease;text-align:center;max-width:90%}
-#conn-status{position:fixed;top:40px;right:8px;z-index:600;font-family:'Press Start 2P';font-size:6px;padding:3px 6px;border:1px solid}
-#conn-status.online{background:rgba(39,174,96,.2);color:#6f6;border-color:#6f6}
-#conn-status.offline{background:rgba(192,57,43,.2);color:#f66;border-color:#f66}
+/* ── TOAST + STATUS ── */
+#toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:9000;font-family:'Press Start 2P';font-size:7px;background:var(--dark-brown);color:var(--sand);border:2px solid var(--sand);padding:8px 14px;display:none;text-align:center;max-width:90%;animation:popIn .2s ease}
+#conn-dot{position:fixed;top:13px;left:50%;transform:translateX(-50%);z-index:600;font-family:'Press Start 2P';font-size:5px;padding:2px 6px;border:1px solid;border-radius:0}
+#conn-dot.on{color:#6f6;border-color:#6f6;background:rgba(39,174,96,.15)}
+#conn-dot.off{color:#f66;border-color:#f66;background:rgba(192,57,43,.15)}
 
-/* MOBILE */
-@media(max-width:600px){
-  .duel-area{grid-template-columns:1fr}
-  .vs-badge{padding:4px 0;font-size:12px}
-  .dbox{width:38px;height:46px;font-size:14px;line-height:40px}
-  .npb{height:34px;font-size:20px;line-height:30px}
-  .btn{font-size:8px;padding:7px 10px}
-  .topbar-title{font-size:7px}
+/* ── MOBILE ── */
+@media(max-width:580px){
+  .duel-columns{grid-template-columns:1fr}
+  .vs-sep{display:none}
+  .dbox{width:36px;height:44px;font-size:13px;line-height:38px}
+  .npb{height:32px;font-size:19px;line-height:28px}
+  .sdbox{width:44px;height:52px;font-size:15px;line-height:46px}
+  .pos-slot{width:36px;height:44px;font-size:12px;line-height:40px}
+  .drag-num{width:22px;height:22px;font-size:8px;line-height:18px}
+  .susp-d{width:24px;height:24px;font-size:8px;line-height:20px}
+  .btn{font-size:8px;padding:8px 10px}
+  .hist-scroll{max-height:110px}
+  .chat-msgs{max-height:80px}
+  .av-opt{font-size:20px}
+}
+@media(max-width:380px){
+  .dbox{width:32px;height:40px;font-size:11px;line-height:34px}
+  .npb{height:30px;font-size:17px;line-height:26px}
 }
 </style>
 </head>
@@ -186,27 +291,54 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 <div class="ground"></div>
 <div id="bc-flash"><div class="bc-inner" id="bc-text"></div></div>
 <div id="toast"></div>
-<div id="conn-status" class="offline">● OFFLINE</div>
+<div id="conn-dot" class="off">● OFFLINE</div>
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="topbar-title">🤠 BULLS &amp; COWS ONLINE</div>
-  <div class="topbar-group">
-    <button class="ctrl-btn" onclick="toggleTheme()" id="theme-btn">🌙 NIGHT</button>
+  <div class="topbar-left">
+    <button class="back-btn" id="back-btn" onclick="goBack()">← BACK</button>
+    <div class="topbar-title" id="topbar-title">🤠 BULLS &amp; COWS</div>
+  </div>
+  <div class="topbar-right">
+    <button class="ctrl-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
   </div>
 </div>
 
-<!-- ══════════ SCREEN: LOBBY ══════════ -->
-<div class="screen active" id="screen-lobby">
-  <div class="pbox lobby-box">
-    <div class="lobby-title">🤠 COWBOY ROBERT'S<br>BULLS &amp; COWS<br><span style="font-size:9px;color:var(--brown)">MULTIPLAYER DUEL</span></div>
+<!-- ════════════════════════════════════════
+  SCREEN 1: HOME — choose mode
+════════════════════════════════════════ -->
+<div class="screen active" id="screen-home">
+  <div class="home-title">🤠 COWBOY ROBERT'S<br>BULLS &amp; COWS</div>
+  <div class="home-subtitle">Pick yer game mode, partner</div>
+  <div class="pbox home-box">
+    <button class="mode-btn" onclick="startFlow('bot')">
+      <div class="mode-icon">🤖</div>
+      <div class="mode-text">
+        <div class="mode-title">VS COWBOY ROBERT</div>
+        <div class="mode-desc">Play against the AI bot. Robert will talk, dance, throw things, and try to beat you.</div>
+      </div>
+    </button>
+    <button class="mode-btn" onclick="startFlow('online')">
+      <div class="mode-icon">🌐</div>
+      <div class="mode-text">
+        <div class="mode-title">ONLINE MULTIPLAYER</div>
+        <div class="mode-desc">Duel a real player! Random match or invite a friend with a private room code.</div>
+      </div>
+    </button>
+  </div>
+</div>
 
-    <span class="slabel">YOUR NAME</span>
-    <input class="input-field" id="player-name" maxlength="16" placeholder="Enter yer name..." value="Cowpoke"/>
-
-    <div style="height:10px"></div>
-    <span class="slabel">YOUR AVATAR</span>
-    <div class="avatar-row" id="avatar-row">
+<!-- ════════════════════════════════════════
+  SCREEN 2: PROFILE — name + avatar
+════════════════════════════════════════ -->
+<div class="screen" id="screen-profile">
+  <div class="pbox profile-box">
+    <div class="step-title">WHO ARE YOU, PARTNER?</div>
+    <label class="slabel" style="border:none;padding:2px 0;background:none">YOUR NAME</label>
+    <input class="input-field" id="player-name" maxlength="14" placeholder="Enter yer name..." value="Cowpoke"/>
+    <div class="gap"></div>
+    <label class="slabel" style="border:none;padding:2px 0;background:none">YOUR AVATAR</label>
+    <div class="av-grid" id="avatar-grid">
       <div class="av-opt sel" onclick="selAv(this,'🤠')">🤠</div>
       <div class="av-opt" onclick="selAv(this,'🧑‍🌾')">🧑‍🌾</div>
       <div class="av-opt" onclick="selAv(this,'🦊')">🦊</div>
@@ -218,162 +350,193 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <div class="av-opt" onclick="selAv(this,'🐯')">🐯</div>
       <div class="av-opt" onclick="selAv(this,'🤖')">🤖</div>
     </div>
-
-    <div style="height:10px"></div>
-    <span class="slabel">DIFFICULTY</span>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <div class="av-opt sel" style="width:auto;padding:6px 12px;font-size:14px" onclick="selDiff(this,3)" id="d3">🌵 3 digits</div>
-      <div class="av-opt" style="width:auto;padding:6px 12px;font-size:14px" onclick="selDiff(this,4)" id="d4">🐂 4 digits</div>
-      <div class="av-opt" style="width:auto;padding:6px 12px;font-size:14px" onclick="selDiff(this,5)" id="d5">💀 5 digits</div>
-    </div>
-
-    <hr class="divider">
-
-    <button class="btn btn-green btn-full" style="margin-bottom:8px" onclick="findMatch()">🔍 FIND RANDOM OPPONENT</button>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <button class="btn btn-blue" onclick="showCreatePrivate()">🔒 CREATE PRIVATE ROOM</button>
-      <button class="btn" onclick="showJoinPrivate()">🚪 JOIN PRIVATE ROOM</button>
-    </div>
-
-    <div id="private-create-panel" style="display:none;margin-top:10px">
-      <span class="slabel">SET A PASSWORD (optional)</span>
-      <input class="input-field" id="create-password" maxlength="16" placeholder="Leave empty for no password"/>
-      <div style="height:8px"></div>
-      <button class="btn btn-blue btn-full" onclick="createPrivate()">CREATE ROOM</button>
-    </div>
-
-    <div id="private-join-panel" style="display:none;margin-top:10px">
-      <span class="slabel">ROOM CODE</span>
-      <input class="input-field" id="join-code" maxlength="12" placeholder="e.g. PRIV_ABC123" style="margin-bottom:6px"/>
-      <span class="slabel">PASSWORD (if required)</span>
-      <input class="input-field" id="join-password" maxlength="16" placeholder="Leave empty if none"/>
-      <div style="height:8px"></div>
-      <button class="btn btn-green btn-full" onclick="joinPrivate()">JOIN ROOM</button>
-    </div>
-
-    <hr class="divider">
-    <div style="font-size:14px;color:var(--brown);text-align:center;line-height:1.6">
-      No repeating digits. No leading zero.<br>
-      🐂 Bull = right digit, right place<br>
-      🐄 Cow = right digit, wrong place<br>
-      ⏰ 60 seconds per turn
-    </div>
+    <div class="gap"></div>
+    <button class="btn btn-green" onclick="goNextFromProfile()">NEXT →</button>
   </div>
 </div>
 
-<!-- ══════════ SCREEN: WAITING ══════════ -->
+<!-- ════════════════════════════════════════
+  SCREEN 3: DIFFICULTY
+════════════════════════════════════════ -->
+<div class="screen" id="screen-difficulty">
+  <div class="pbox diff-box">
+    <div class="step-title">CHOOSE DIFFICULTY</div>
+    <div class="diff-row sel" onclick="selDiff(this,3)" id="diff-3">
+      <div class="diff-row-icon">🌵</div>
+      <div><div class="diff-row-name">EASY — 3 DIGITS</div><div class="diff-row-desc">Perfect for beginners. Warm-up shot.</div></div>
+    </div>
+    <div class="diff-row" onclick="selDiff(this,4)" id="diff-4">
+      <div class="diff-row-icon">🐂</div>
+      <div><div class="diff-row-name">MEDIUM — 4 DIGITS</div><div class="diff-row-desc">The classic duel. Balanced challenge.</div></div>
+    </div>
+    <div class="diff-row" onclick="selDiff(this,5)" id="diff-5">
+      <div class="diff-row-icon">💀</div>
+      <div><div class="diff-row-name">HARD — 5 DIGITS</div><div class="diff-row-desc">Legend territory only.</div></div>
+    </div>
+    <div class="gap"></div>
+    <div id="bot-mood-wrap">
+      <div class="step-title" style="font-size:8px;margin-bottom:8px">ROBERT'S MOOD</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center" id="mood-grid">
+        <div class="av-opt sel" style="width:auto;padding:5px 8px;font-size:13px" onclick="selMood(this,'friendly')">🤠 Kid Friendly</div>
+        <div class="av-opt" style="width:auto;padding:5px 8px;font-size:13px" onclick="selMood(this,'sassy')">😏 Sassy</div>
+        <div class="av-opt" style="width:auto;padding:5px 8px;font-size:13px" onclick="selMood(this,'competitive')">🏆 Competitive</div>
+        <div class="av-opt" style="width:auto;padding:5px 8px;font-size:13px" onclick="selMood(this,'rage')">🤬 Rage</div>
+        <div class="av-opt" style="width:auto;padding:5px 8px;font-size:13px" onclick="selMood(this,'thinker')">🧐 Thinker</div>
+      </div>
+      <div class="gap"></div>
+    </div>
+    <button class="btn btn-green" onclick="goNextFromDifficulty()">NEXT →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  SCREEN 4: ONLINE LOBBY
+════════════════════════════════════════ -->
+<div class="screen" id="screen-lobby">
+  <div class="pbox lobby-box">
+    <div class="step-title">FIND YOUR OPPONENT</div>
+    <button class="btn btn-green" onclick="findMatch()">🔍 FIND RANDOM OPPONENT</button>
+    <div class="or-divider">— OR —</div>
+    <button class="btn btn-blue" onclick="togglePanel('create')">🔒 CREATE PRIVATE ROOM</button>
+    <div class="collapsible-panel" id="create-panel">
+      <label class="slabel" style="border:none;padding:2px 0;background:none">PASSWORD (optional)</label>
+      <input class="input-field" id="create-password" maxlength="16" placeholder="Leave empty = no password"/>
+      <button class="btn btn-blue btn-sm" style="width:100%" onclick="createPrivate()">CREATE ROOM</button>
+    </div>
+    <div class="or-divider">— OR —</div>
+    <button class="btn" onclick="togglePanel('join')">🚪 JOIN WITH ROOM CODE</button>
+    <div class="collapsible-panel" id="join-panel">
+      <label class="slabel" style="border:none;padding:2px 0;background:none">ROOM CODE</label>
+      <input class="input-field" id="join-code" maxlength="20" placeholder="e.g. PRIV_ABC123"/>
+      <label class="slabel" style="border:none;padding:2px 0;background:none">PASSWORD (if any)</label>
+      <input class="input-field" id="join-password" maxlength="16" placeholder="Leave empty if none"/>
+      <button class="btn btn-green btn-sm" style="width:100%" onclick="joinPrivate()">JOIN ROOM</button>
+    </div>
+    <div style="font-size:14px;color:var(--brown);text-align:center;line-height:1.6;margin-top:4px">⏰ 60 seconds per turn<br>🐂 Bull = right digit, right place<br>🐄 Cow = right digit, wrong place</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+  SCREEN 5: WAITING / FOUND
+════════════════════════════════════════ -->
 <div class="screen" id="screen-waiting">
   <div class="pbox waiting-box">
-    <div id="wait-title" style="font-family:'Press Start 2P';font-size:10px;color:var(--ui-text);text-align:center;margin-bottom:12px;line-height:1.8"></div>
-
-    <div id="room-code-wrap" style="display:none;margin-bottom:10px">
-      <div style="font-family:'Press Start 2P';font-size:7px;color:var(--brown);margin-bottom:4px;text-align:center">SHARE THIS ROOM CODE:</div>
-      <div class="room-code" id="room-code-display"></div>
-      <div style="font-size:14px;color:var(--brown);text-align:center;margin-top:4px">Send this to your friend!</div>
+    <div class="waiting-title" id="wait-title">FINDING OPPONENT...</div>
+    <div id="room-code-wrap" style="display:none;margin-bottom:12px">
+      <div style="font-family:'Press Start 2P';font-size:7px;color:var(--brown);margin-bottom:6px">SHARE THIS CODE WITH YOUR FRIEND:</div>
+      <div class="room-code-display" id="room-code-show" onclick="copyRoomCode()">---</div>
+      <div class="copy-hint">Tap to copy!</div>
     </div>
-
-    <div class="player-cards" id="player-cards-wrap"></div>
-
-    <div id="queue-msg" style="font-size:18px;color:var(--sand);text-align:center;margin:8px 0;display:none">
-      🔍 Searching for opponent...<br>
-      <span style="font-size:14px;color:var(--brown)">This may take a moment</span>
+    <div id="queue-anim" style="font-size:22px;text-align:center;color:var(--sand);margin:8px 0;display:none">
+      <span class="pulse-dot">🔍</span> Searching for a cowpoke...
     </div>
-
-    <button class="btn btn-red btn-sm" onclick="cancelWait()" style="margin-top:10px">✖ CANCEL</button>
+    <div class="player-cards" id="wait-cards"></div>
+    <div style="height:8px"></div>
+    <button class="btn btn-red btn-sm btn-inline" onclick="cancelWait()" style="width:auto;margin:0 auto;display:block">✖ CANCEL</button>
   </div>
 </div>
 
-<!-- ══════════ SCREEN: PICK SECRET ══════════ -->
+<!-- ════════════════════════════════════════
+  SCREEN 6: PICK SECRET
+════════════════════════════════════════ -->
 <div class="screen" id="screen-secret">
   <div class="pbox secret-box">
-    <div style="font-family:'Press Start 2P';font-size:9px;color:var(--ui-text);text-align:center;margin-bottom:10px;line-height:1.8">
-      🔐 PICK YOUR SECRET NUMBER<br>
-      <span style="font-size:7px;color:var(--brown)">Your opponent can't see this!</span>
-    </div>
-    <div class="digit-pick-row" id="secret-display"></div>
+    <div class="step-title">🔐 YOUR SECRET NUMBER<br><span style="font-size:7px;color:var(--brown)">Your opponent can't see this!</span></div>
+    <div class="secret-digits" id="secret-digits"></div>
     <div class="snumpad" id="secret-numpad"></div>
-    <button class="btn btn-green btn-full" id="confirm-secret-btn" onclick="confirmSecret()" style="opacity:.4;pointer-events:none">
-      🤠 LOCK IT IN!
-    </button>
-    <div style="font-size:14px;color:var(--brown);text-align:center;margin-top:8px" id="secret-status">
-      Waiting for both players to pick their numbers...
-    </div>
+    <button class="btn btn-green" id="lock-btn" onclick="lockSecret()" style="opacity:.4;pointer-events:none">🤠 LOCK IT IN!</button>
+    <div class="secret-hint" id="secret-hint">Pick your <span id="secret-digit-count">?</span>-digit secret number above</div>
   </div>
 </div>
 
-<!-- ══════════ SCREEN: GAME ══════════ -->
+<!-- ════════════════════════════════════════
+  SCREEN 7: GAME
+════════════════════════════════════════ -->
 <div class="screen" id="screen-game">
-  <div class="game-wrap">
-    <!-- Robert Narrator -->
-    <div class="pbox">
-      <div class="robert-narrator">
-        <div class="rnarrator-av">🤠</div>
-        <div class="rnarrator-bubble" id="robert-bubble">Welcome to the duel, pardners! First one to crack the other's number wins!</div>
-      </div>
+  <div class="game-inner">
+
+    <!-- Robert narrator -->
+    <div class="pbox narrator-bar">
+      <div class="narrator-av" id="narrator-av">🤠</div>
+      <div class="narrator-bubble" id="narrator-bubble">Welcome to the duel, pardner!</div>
     </div>
 
     <!-- HUD -->
     <div class="pbox game-hud">
-      <div class="hud-item"><div class="hud-label">YOUR GUESSES</div><div class="hud-val" id="my-guess-count">0</div></div>
-      <div style="flex:1;display:flex;align-items:center;gap:6px;padding:0 8px">
-        <span style="font-family:'Press Start 2P';font-size:7px;color:var(--brown)">⏱</span>
+      <div class="hud-stat"><div class="hud-lbl">MY GUESSES</div><div class="hud-val" id="hud-my-g">0</div></div>
+      <div class="timer-wrap">
         <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
-        <span style="font-family:'Press Start 2P';font-size:10px;color:var(--ui-text)" id="timer-num">60</span>
+        <div class="timer-num" id="timer-num">--</div>
       </div>
-      <div class="hud-item"><div class="hud-label">THEIR GUESSES</div><div class="hud-val" id="opp-guess-count">0</div></div>
+      <div class="hud-stat"><div class="hud-lbl">THEIR GUESSES</div><div class="hud-val" id="hud-opp-g">0</div></div>
     </div>
 
-    <!-- DUEL AREA -->
-    <div class="duel-area">
+    <!-- DUEL COLUMNS -->
+    <div class="duel-columns">
       <!-- MY SIDE -->
-      <div class="duel-side">
+      <div class="duel-col">
         <div class="pbox">
           <div class="slabel">
-            <span id="my-side-label">YOU</span>
-            <span class="turn-indicator" id="my-turn-indicator">...</span>
+            <span>YOU <span id="my-turn-dot" class="turn-dot"></span></span>
+            <span id="my-turn-label" style="font-size:11px;color:var(--green);display:none">← YOUR TURN</span>
           </div>
-          <div class="player-header">
-            <div class="player-av-large" id="my-av">🤠</div>
-            <div class="player-name-block">
-              <div class="player-name" id="my-name">Me</div>
-              <div class="player-tag">🔐 secret: <span id="my-secret-show">???</span></div>
+          <div class="duel-player-header">
+            <div class="duel-av" id="my-av-display">🤠</div>
+            <div>
+              <div class="duel-name" id="my-name-display">Me<span class="you-pill">YOU</span></div>
+              <div class="duel-tag">🔐 <span id="my-secret-reveal">???</span></div>
             </div>
-            <div class="you-badge">YOU</div>
           </div>
         </div>
         <div class="pbox">
           <div class="slabel">GUESS THEIR NUMBER</div>
-          <div class="guess-area">
+          <div class="guess-input-area">
             <div class="digit-row" id="digit-row"></div>
             <div class="numpad" id="numpad"></div>
-            <button class="btn btn-green fire-btn" id="fire-btn" onclick="makeGuess()">🔫 FIRE!</button>
+            <button class="btn btn-green fire-btn" id="fire-btn" onclick="submitGuess()">🔫 FIRE!</button>
           </div>
         </div>
+        <!-- SUSPECT LIST -->
         <div class="pbox">
-          <div class="slabel">YOUR GUESSES AT THEM</div>
+          <div class="slabel">SUSPECT LIST <span style="font-size:10px;font-family:VT323">1×=❌ 2×=✅</span></div>
+          <div class="susp-list" id="susp-list"></div>
+          <div style="font-size:12px;color:var(--brown);padding:2px 6px 5px">Single tap: cross off | Double tap: confirm present</div>
+        </div>
+        <!-- POSITION TRACKER -->
+        <div class="pbox">
+          <div class="slabel">POSITION TRACKER</div>
+          <div style="font-size:13px;color:var(--brown);padding:3px 6px 0">Drag digits to their confirmed spot:</div>
+          <div class="pos-track-row" id="pos-tracker"></div>
+          <div style="padding:0 6px 5px">
+            <div style="font-family:'Press Start 2P';font-size:5px;color:var(--brown);margin-bottom:3px">DRAG FROM HERE:</div>
+            <div class="drag-tray" id="drag-tray"></div>
+          </div>
+        </div>
+        <!-- MY HISTORY -->
+        <div class="pbox">
+          <div class="slabel">MY GUESSES AT THEM</div>
           <div class="hist-scroll" id="my-history"></div>
         </div>
       </div>
 
-      <!-- VS -->
-      <div class="vs-badge">VS</div>
+      <div class="vs-sep">VS</div>
 
       <!-- OPPONENT SIDE -->
-      <div class="duel-side">
+      <div class="duel-col">
         <div class="pbox">
           <div class="slabel">
-            <span id="opp-side-label">OPPONENT</span>
-            <span class="turn-indicator" id="opp-turn-indicator">...</span>
+            <span id="opp-name-label">OPPONENT <span id="opp-turn-dot" class="turn-dot"></span></span>
+            <span id="opp-turn-label" style="font-size:11px;color:var(--red);display:none">THEIR TURN →</span>
           </div>
-          <div class="player-header">
-            <div class="player-av-large" id="opp-av">❓</div>
-            <div class="player-name-block">
-              <div class="player-name" id="opp-name">Waiting...</div>
-              <div class="player-tag">🔐 secret: hidden</div>
+          <div class="duel-player-header">
+            <div class="duel-av" id="opp-av-display">❓</div>
+            <div>
+              <div class="duel-name" id="opp-name-display">Waiting...</div>
+              <div class="duel-tag">🔐 hidden</div>
             </div>
           </div>
         </div>
+        <!-- THEIR HISTORY -->
         <div class="pbox">
           <div class="slabel">THEIR GUESSES AT YOU</div>
           <div class="hist-scroll" id="opp-history"></div>
@@ -381,15 +544,16 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       </div>
     </div>
 
-    <!-- CHAT -->
-    <div class="pbox chat-panel">
+    <!-- CHAT (multiplayer only) -->
+    <div class="pbox" id="chat-panel" style="display:none">
       <div class="slabel">💬 CHAT</div>
       <div class="chat-msgs" id="chat-msgs"></div>
-      <div class="chat-input-row">
-        <input class="chat-input" id="chat-input" placeholder="Say something..." maxlength="200" onkeydown="if(event.key==='Enter')sendChat()"/>
-        <button class="chat-send" onclick="sendChat()">SEND</button>
+      <div class="chat-row">
+        <input class="chat-inp" id="chat-input" placeholder="Say something..." maxlength="180" onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="chat-send-btn" onclick="sendChat()">SEND</button>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -398,480 +562,545 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   <div class="pbox result-box">
     <div class="result-title" id="result-title"></div>
     <div class="result-body" id="result-body"></div>
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-      <button class="btn btn-green" onclick="requestRematch()">🔄 REMATCH</button>
-      <button class="btn" onclick="goLobby()">🏠 MAIN MENU</button>
+    <div class="result-btns">
+      <button class="btn btn-green" id="rematch-btn" onclick="requestRematch()">🔄 REMATCH</button>
+      <button class="btn" onclick="goHome()">🏠 MENU</button>
     </div>
-    <div style="font-size:14px;color:var(--brown);margin-top:8px" id="rematch-status"></div>
+    <div style="font-size:13px;color:var(--brown);margin-top:8px;text-align:center" id="rematch-status"></div>
   </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ══════════════════════════════════════════
-// CLIENT STATE
-// ══════════════════════════════════════════
-const socket = io();
-let ME = { id: null, name: 'Cowpoke', avatar: '🤠', digits: 3 };
-let ROOM = { id: null, state: null };
-let CUR = [];      // current guess digits being typed
-let MY_SECRET = '';
-let SECRET_INPUT = [];
-let TURN = null;   // whose turn socketId
-let MY_ID = null;
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let ME = { name:'Cowpoke', avatar:'🤠', digits:3, mood:'friendly', mode:'bot' };
+let GAME = { mySecret:'', robSecret:'', cur:[], myGuesses:[], robGuesses:[], over:false, knowledge:[], myTurns:0, robTurns:0, loseStreak:0 };
+let ONLINE = { id:null, roomId:null, turn:null, secretInput:[], secretLocked:false };
 let nightMode = false;
+let screenStack = ['home'];
 
-// ══════════════════════════════════════════
-// ROBERT LINES
-// ══════════════════════════════════════════
-const ROBERT = {
-  bull: ["Hot dog!! A BULL! Right digit, right place! You're narrowing it down!","A BULL! Somebody's on fire today! Keep it up!","BULL! That one hit the bullseye — literally! 🎯","Oh ho! A bull! Robert is IMPRESSED!","Right on target, cowpoke! That's a bull!"],
-  cow: ["A cow! The digit's there but it wandered off to the wrong spot!","Close but not quite — that's a cow for ya!","Cow! It exists somewhere in that number, pardner!","Almost almost! A cow means yer on the right trail!","That digit's in there, just lost on the range!"],
-  nothing: ["Nope, nothing! But now ya know what ain't in there!","Zero! Clean miss — but useful information, partner!","Not a single one! Cross those off yer list!","Zilch! The number fortress holds... for now!","None of those! Back to the drawing board, cowpoke!"],
-  myBull: ["YIKES! Your opponent got a bull on your number! Better hope they can't find the rest!","Uh oh, they got a bull! Your secret is leaking a little...","They found one right! Don't panic — they still got a ways to go!","A bull for your opponent! Feeling nervous? Robert would be.","They cracked one digit! The hunt is on!"],
-  myCow: ["Your opponent got a cow — they know one of your digits exists!","They sniffed out a cow! Your number isn't safe yet, but close!","Cow for them — they're circling, partner!"],
-  myNothing: ["Nothing for your opponent! Your number fortress stands FIRM!","They got nothing! Haha! Robert loves a good fortress!","Zero for them! Your secret number sleeps safe... tonight!"],
-  turn_you: ["Your turn, pardner! Take yer time — you got 60 seconds!","Step up and fire! The number won't guess itself!","It's your move, cowpoke! Make it count!","You're up! Think it through and take yer shot!","Time to shine! What's your guess gonna be?"],
-  turn_opp: ["Now it's their turn. Let's see what they got...","Your opponent is thinking... Robert can hear the gears grinding.","Sit tight while they make their move.","Their turn now. Hope they choke. (Just kidding.) (Kinda.)","Waiting on your opponent... *taps foot*"],
-  win: ["YEEHAW!! YOU WIN THE DUEL!! Robert is beside himself with joy! 🎉","You cracked it! The number is YOURS! Champion of the digital frontier!","VICTORY!! You outgunned, outthought, and outguessed your opponent!","I knew you had it in ya, pardner! That's how a real cowboy plays!","The duel is OVER and YOU are the victor! Take a bow!"],
-  lose: ["Oof. They got your number. The duel is lost, but the legend lives on.","Your opponent cracked the code! A fine duel, though. Tip your hat.","You fought hard but they were sharper today. Rematch?","The number has been revealed... by your opponent. Sting of defeat, pardner.","They won fair and square. Robert is proud of both of ya."],
-  chat: ["*Robert overhears the conversation and nods approvingly*","Ha! Robert loves a chatty duel!","Talk is cheap, but in Bulls & Cows, information is GOLD!","They're communicating! Robert wonders what psychological warfare is unfolding."],
-  idle: ["Both players still thinking... this is the deepest duel Robert has ever witnessed.","The tension! The drama! Robert is on the edge of his boots!","*Robert munches on some jerky while waiting*","Come on pardners, those numbers aren't gonna guess themselves!","The silence is deafening... and Robert loves it."]
-};
+// ── AUDIO ──
+let actx=null,mplay=false,mtimer=null;
+function initA(){if(!actx){actx=new(window.AudioContext||window.webkitAudioContext)();actx.resume()}}
+function pN(f,s,d,v=.06,t='sine'){if(!actx)return;const o=actx.createOscillator(),g=actx.createGain();o.connect(g);g.connect(actx.destination);o.type=t;o.frequency.setValueAtTime(f,actx.currentTime+s);g.gain.setValueAtTime(0,actx.currentTime+s);g.gain.linearRampToValueAtTime(v,actx.currentTime+s+.02);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+s+d);o.start(actx.currentTime+s);o.stop(actx.currentTime+s+d+.05)}
+function sfxCoin(){initA();[987,1319].forEach((f,i)=>{pN(f,i*.08,.13,.1,'square')})}
+function sfxBull(){initA();[523,659,784,1047].forEach((f,i)=>{pN(f,i*.07,.18,.09,'square')})}
+function sfxCow(){initA();[392,494,587].forEach((f,i)=>pN(f,i*.06,.15,.07,'triangle'))}
+function sfxWin(){initA();[523,659,784,1047,1319].forEach((f,i)=>{pN(f,.1*i,.2,.09,'square')})}
+function sfxLose(){initA();[400,350,300,250,200].forEach((f,i)=>pN(f,i*.12,.2,.07,'sawtooth'))}
+function sfxClick(){initA();pN(440,0,.05,.08,'square')}
 
-function robSay(lines) {
-  const arr = Array.isArray(lines) ? lines : ROBERT[lines] || ['...'];
-  const txt = arr[Math.floor(Math.random() * arr.length)];
-  const b = document.getElementById('robert-bubble');
-  if (b) { b.textContent = txt; b.style.animation = 'none'; requestAnimationFrame(() => b.style.animation = ''); }
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function showScreen(id, pushHistory=true) {
+  const cur = document.querySelector('.screen.active');
+  if(cur && cur.id !== 'screen-'+id) cur.classList.add('exit-left');
+  setTimeout(()=>{ if(cur) cur.classList.remove('active','exit-left'); }, 300);
+  const next = document.getElementById('screen-'+id);
+  if(next){ next.classList.add('active'); next.scrollTop=0; }
+  if(pushHistory && screenStack[screenStack.length-1]!==id) screenStack.push(id);
+  updateTopBar(id);
 }
 
-// ══════════════════════════════════════════
-// SOCKET EVENTS
-// ══════════════════════════════════════════
-socket.on('connect', () => {
-  MY_ID = socket.id;
-  document.getElementById('conn-status').textContent = '● ONLINE';
-  document.getElementById('conn-status').className = 'online';
-  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
-});
-socket.on('disconnect', () => {
-  document.getElementById('conn-status').textContent = '● OFFLINE';
-  document.getElementById('conn-status').className = 'offline';
-});
-socket.on('player_set', ({ id }) => { MY_ID = id; });
+function updateTopBar(screenId){
+  const backBtn = document.getElementById('back-btn');
+  const title = document.getElementById('topbar-title');
+  const titles = {home:'🤠 BULLS & COWS',profile:'🤠 BULLS & COWS',difficulty:'🤠 BULLS & COWS',lobby:'FIND OPPONENT',waiting:'MATCHMAKING',secret:'PICK YOUR NUMBER',game:'DUEL!'};
+  title.textContent = titles[screenId] || '🤠 BULLS & COWS';
+  const showBack = !['home','game'].includes(screenId);
+  backBtn.classList.toggle('show', showBack);
+}
 
-socket.on('in_queue', () => {
-  showScreen('waiting');
-  document.getElementById('queue-msg').style.display = 'block';
-  document.getElementById('room-code-wrap').style.display = 'none';
-  document.getElementById('wait-title').textContent = '🔍 Finding Opponent...';
-  renderWaitingCards([]);
-});
+function goBack(){
+  if(screenStack.length <= 1){ goHome(); return; }
+  screenStack.pop();
+  const prev = screenStack[screenStack.length-1];
+  showScreen(prev, false);
+}
 
-socket.on('room_created', ({ roomId, state }) => {
-  ROOM = { id: roomId, state };
-  showScreen('waiting');
-  document.getElementById('queue-msg').style.display = 'none';
-  document.getElementById('room-code-wrap').style.display = 'block';
-  document.getElementById('room-code-display').textContent = roomId;
-  document.getElementById('wait-title').textContent = '🔒 PRIVATE ROOM';
-  renderWaitingCards(state.players);
-});
+function goHome(){
+  clearBotTimers();
+  document.getElementById('result-overlay').classList.remove('show');
+  document.getElementById('chat-panel').style.display='none';
+  GAME = { mySecret:'', robSecret:'', cur:[], myGuesses:[], robGuesses:[], over:false, knowledge:[], myTurns:0, robTurns:0, loseStreak:0 };
+  ONLINE = { id:null, roomId:null, turn:null, secretInput:[], secretLocked:false };
+  screenStack = ['home'];
+  showScreen('home', false);
+}
 
-socket.on('room_joined', ({ roomId, state }) => {
-  ROOM = { id: roomId, state };
-  showScreen('waiting');
-  document.getElementById('queue-msg').style.display = 'none';
-  if (state.players.length < 2) {
-    document.getElementById('room-code-wrap').style.display = 'block';
-    document.getElementById('room-code-display').textContent = roomId;
+function toggleTheme(){
+  nightMode=!nightMode;
+  document.documentElement.setAttribute('data-theme',nightMode?'night':'day');
+  document.getElementById('theme-btn').textContent=nightMode?'☀️':'🌙';
+}
+
+// ══════════════════════════════════════════════════════
+//  FLOW SETUP
+// ══════════════════════════════════════════════════════
+function startFlow(mode){
+  ME.mode = mode;
+  sfxClick();
+  showScreen('profile');
+}
+
+function selAv(el,e){document.querySelectorAll('.av-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');ME.avatar=e;sfxClick()}
+function selDiff(el,n){document.querySelectorAll('#diff-3,#diff-4,#diff-5').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');ME.digits=n;sfxClick()}
+function selMood(el,m){document.querySelectorAll('#mood-grid .av-opt').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');ME.mood=m;sfxClick()}
+
+function goNextFromProfile(){
+  ME.name = document.getElementById('player-name').value.trim()||'Cowpoke';
+  sfxClick();
+  // Show/hide mood for bot only
+  document.getElementById('bot-mood-wrap').style.display = ME.mode==='bot' ? 'block':'none';
+  showScreen('difficulty');
+}
+
+function goNextFromDifficulty(){
+  sfxClick();
+  document.getElementById('secret-digit-count').textContent = ME.digits;
+  if(ME.mode==='bot'){
+    buildSecretUI(); showScreen('secret');
   } else {
-    document.getElementById('room-code-wrap').style.display = 'none';
-  }
-  document.getElementById('wait-title').textContent = '⚔️ DUEL FOUND!';
-  renderWaitingCards(state.players);
-});
-
-socket.on('phase_change', ({ phase }) => {
-  if (phase === 'picking') {
-    showScreen('secret');
-    buildSecretUI();
-    document.getElementById('secret-status').textContent = 'Waiting for both players to pick their numbers...';
-  }
-});
-
-socket.on('player_ready', ({ id, name }) => {
-  const isMine = id === MY_ID;
-  document.getElementById('secret-status').textContent =
-    isMine ? '✅ Locked in! Waiting for opponent...' : `✅ ${name} has locked in their number! Your turn...`;
-});
-
-socket.on('secret_confirmed', () => {
-  document.getElementById('confirm-secret-btn').textContent = '✅ Locked in! Waiting...';
-  document.getElementById('confirm-secret-btn').style.opacity = '0.6';
-  document.getElementById('confirm-secret-btn').style.pointerEvents = 'none';
-});
-
-socket.on('game_start', (state) => {
-  ROOM.state = state;
-  TURN = state.turn;
-  showScreen('game');
-  initGameUI(state);
-  robSay(TURN === MY_ID ? 'turn_you' : 'turn_opp');
-});
-
-socket.on('guess_result', ({ by, guess, bulls, cows }) => {
-  const isMine = by === MY_ID;
-  addHistEntry(guess, bulls, cows, isMine ? 'my-history' : 'opp-history');
-  if (isMine) {
-    document.getElementById('my-guess-count').textContent =
-      parseInt(document.getElementById('my-guess-count').textContent) + 1;
-    CUR = []; updateDigitRow(); markNumpad();
-    showBCFlash(bulls > 0 ? 'bull' : cows > 0 ? 'cow' : null, bulls, cows);
-    if (bulls > 0) robSay('bull');
-    else if (cows > 0) robSay('cow');
-    else robSay('nothing');
-  } else {
-    document.getElementById('opp-guess-count').textContent =
-      parseInt(document.getElementById('opp-guess-count').textContent) + 1;
-    if (bulls > 0) robSay('myBull');
-    else if (cows > 0) robSay('myCow');
-    else robSay('myNothing');
-  }
-});
-
-socket.on('turn_change', ({ turn }) => {
-  TURN = turn;
-  updateTurnUI();
-  robSay(TURN === MY_ID ? 'turn_you' : 'turn_opp');
-});
-
-socket.on('timer', (t) => {
-  document.getElementById('timer-num').textContent = t;
-  const fill = document.getElementById('timer-fill');
-  fill.style.width = (t / 60 * 100) + '%';
-  fill.className = 'timer-fill' + (t <= 10 ? ' danger' : t <= 20 ? ' warn' : '');
-});
-
-socket.on('game_over', ({ winner, winnerName, secret, guesses }) => {
-  clearTimerUI();
-  const won = winner === MY_ID;
-  const opp = ROOM.state.players.find(p => p.id !== MY_ID);
-  const oppName = opp ? opp.name : 'Opponent';
-  document.getElementById('result-title').textContent = won ? '🎉 YOU WIN!' : '💀 YOU LOSE!';
-  document.getElementById('result-title').className = 'result-title ' + (won ? 'result-win' : 'result-lose');
-  document.getElementById('result-body').innerHTML = won
-    ? `You cracked ${oppName}'s number!<br>Their secret was <b>${secret}</b><br>You needed ${(guesses[MY_ID] || []).length} guesses.`
-    : `${winnerName} cracked your number!<br>Your secret was <b>${MY_SECRET}</b><br>They needed ${(guesses[winner] || []).length} guesses.`;
-  document.getElementById('result-overlay').classList.add('show');
-  document.getElementById('rematch-status').textContent = '';
-  robSay(won ? 'win' : 'lose');
-});
-
-socket.on('chat_msg', (msg) => {
-  addChatLine(msg);
-  if (!msg.system && msg.from !== MY_ID && Math.random() < 0.2) robSay('chat');
-});
-
-socket.on('rematch_vote', ({ count }) => {
-  document.getElementById('rematch-status').textContent = `${count}/2 players want a rematch!`;
-});
-
-socket.on('opponent_left', ({ name }) => {
-  showToast(`${name} left the duel. 🌵`);
-  setTimeout(goLobby, 3000);
-});
-
-socket.on('error_msg', (msg) => { showToast('⚠️ ' + msg); });
-
-// ══════════════════════════════════════════
-// UI FUNCTIONS
-// ══════════════════════════════════════════
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-}
-
-function selAv(el, emoji) {
-  document.querySelectorAll('.av-opt').forEach(x => x.classList.remove('sel'));
-  el.classList.add('sel'); ME.avatar = emoji;
-}
-function selDiff(el, n) {
-  document.querySelectorAll('#d3,#d4,#d5').forEach(x => x.classList.remove('sel'));
-  el.classList.add('sel'); ME.digits = n;
-}
-
-function renderWaitingCards(players) {
-  const wrap = document.getElementById('player-cards-wrap');
-  wrap.innerHTML = '';
-  for (let i = 0; i < 2; i++) {
-    const p = players[i];
-    if (p) {
-      const card = document.createElement('div');
-      card.className = 'player-card' + (p.ready ? ' ready' : '');
-      card.innerHTML = `<div class="player-card-av">${p.avatar}</div><div class="player-card-name">${p.name}${p.id === MY_ID ? ' (YOU)' : ''}</div><div class="player-card-status">${p.ready ? '✅ Ready' : '⏳ Joining...'}</div>`;
-      wrap.appendChild(card);
-    } else {
-      const slot = document.createElement('div');
-      slot.className = 'player-slot'; slot.textContent = '⏳ Waiting...';
-      wrap.appendChild(slot);
-    }
+    showScreen('lobby');
   }
 }
 
-// ── SECRET PICK UI ──
-function buildSecretUI() {
-  SECRET_INPUT = [];
-  const disp = document.getElementById('secret-display');
-  disp.innerHTML = '';
-  const np = document.getElementById('secret-numpad');
-  np.innerHTML = '';
-  for (let i = 0; i < ME.digits; i++) {
-    const d = document.createElement('div');
-    d.className = 'dpick empty'; d.id = `sd${i}`; d.textContent = '?';
-    d.onclick = () => { if (i < SECRET_INPUT.length) { SECRET_INPUT.splice(i, 1); updSecretUI(); } };
+function togglePanel(which){
+  sfxClick();
+  const cp=document.getElementById('create-panel'),jp=document.getElementById('join-panel');
+  if(which==='create'){cp.classList.toggle('open');jp.classList.remove('open')}
+  else{jp.classList.toggle('open');cp.classList.remove('open')}
+}
+
+// ══════════════════════════════════════════════════════
+//  SECRET PICK
+// ══════════════════════════════════════════════════════
+function buildSecretUI(){
+  const n = ME.digits;
+  ONLINE.secretInput = [];
+  const disp=document.getElementById('secret-digits'); disp.innerHTML='';
+  const np=document.getElementById('secret-numpad'); np.innerHTML='';
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');d.className='sdbox empty';d.id=`sd${i}`;d.textContent='?';
+    d.onclick=()=>{if(i<ONLINE.secretInput.length){ONLINE.secretInput.splice(i,1);updSecretUI()}};
     disp.appendChild(d);
   }
-  for (let i = 0; i <= 9; i++) {
-    const b = document.createElement('div');
-    b.className = 'snpb'; b.id = `snp${i}`; b.textContent = i;
-    b.onclick = () => {
-      if (SECRET_INPUT.length >= ME.digits || SECRET_INPUT.includes(String(i)) || (SECRET_INPUT.length === 0 && i === 0)) return;
-      SECRET_INPUT.push(String(i)); updSecretUI();
-    };
-    b.addEventListener('touchstart', e => { e.preventDefault(); b.onclick(); }, { passive: false });
+  for(let i=0;i<=9;i++){
+    const b=document.createElement('div');b.className='snpb';b.id=`snp${i}`;b.textContent=i;
+    const add=()=>{if(ONLINE.secretInput.length>=n||ONLINE.secretInput.includes(String(i))||(ONLINE.secretInput.length===0&&i===0))return;ONLINE.secretInput.push(String(i));sfxClick();updSecretUI()};
+    b.onclick=add;b.addEventListener('touchstart',e=>{e.preventDefault();add()},{passive:false});
     np.appendChild(b);
   }
-  const del = document.createElement('div');
-  del.className = 'snpb del'; del.textContent = '⌫';
-  del.onclick = () => { SECRET_INPUT.pop(); updSecretUI(); };
-  del.addEventListener('touchstart', e => { e.preventDefault(); del.onclick(); }, { passive: false });
+  const del=document.createElement('div');del.className='snpb del';del.textContent='⌫';
+  del.onclick=()=>{ONLINE.secretInput.pop();updSecretUI()};
+  del.addEventListener('touchstart',e=>{e.preventDefault();del.onclick()},{passive:false});
   np.appendChild(del);
 }
 
-function updSecretUI() {
-  for (let i = 0; i < ME.digits; i++) {
-    const el = document.getElementById(`sd${i}`);
-    if (!el) continue;
-    if (i < SECRET_INPUT.length) { el.textContent = SECRET_INPUT[i]; el.classList.remove('empty'); }
-    else { el.textContent = '?'; el.classList.add('empty'); }
+function updSecretUI(){
+  const n=ME.digits;
+  for(let i=0;i<n;i++){const el=document.getElementById(`sd${i}`);if(!el)continue;if(i<ONLINE.secretInput.length){el.textContent=ONLINE.secretInput[i];el.classList.remove('empty')}else{el.textContent='?';el.classList.add('empty')}}
+  for(let i=0;i<=9;i++){const el=document.getElementById(`snp${i}`);if(el)el.classList.toggle('used',ONLINE.secretInput.includes(String(i))||(ONLINE.secretInput.length===0&&i===0))}
+  const btn=document.getElementById('lock-btn');const ready=ONLINE.secretInput.length===n;btn.style.opacity=ready?'1':'.4';btn.style.pointerEvents=ready?'auto':'none';
+}
+
+function lockSecret(){
+  sfxClick();
+  const sec=ONLINE.secretInput.join('');
+  if(ME.mode==='bot'){
+    GAME.mySecret=sec;
+    startBotGame();
+  } else {
+    socket.emit('set_secret',{secret:sec});
+    ONLINE.secretLocked=true;
+    document.getElementById('lock-btn').textContent='✅ Locked in! Waiting...';
+    document.getElementById('lock-btn').style.opacity='.5';
+    document.getElementById('lock-btn').style.pointerEvents='none';
+    document.getElementById('secret-hint').textContent='Waiting for your opponent to lock in their number...';
   }
-  const btn = document.getElementById('confirm-secret-btn');
-  const ready = SECRET_INPUT.length === ME.digits;
-  btn.style.opacity = ready ? '1' : '.4';
-  btn.style.pointerEvents = ready ? 'auto' : 'none';
-  for (let i = 0; i <= 9; i++) {
-    const el = document.getElementById(`snp${i}`);
-    if (el) el.classList.toggle('used', SECRET_INPUT.includes(String(i)) || (SECRET_INPUT.length === 0 && i === 0));
-  }
 }
 
-function confirmSecret() {
-  MY_SECRET = SECRET_INPUT.join('');
-  socket.emit('set_secret', { secret: MY_SECRET });
-  document.getElementById('my-secret-show') && (document.getElementById('my-secret-show').textContent = MY_SECRET.split('').join(' '));
+// ══════════════════════════════════════════════════════
+//  BOT GAME (vs Robert)
+// ══════════════════════════════════════════════════════
+function genNum(n){const p=[1,2,3,4,5,6,7,8,9];for(let i=p.length-1;i>0;i--){const j=~~(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]]}let r=[p[0]];const rest=[0,1,2,3,4,5,6,7,8,9].filter(x=>x!==p[0]);for(let i=rest.length-1;i>0;i--){const j=~~(Math.random()*(i+1));[rest[i],rest[j]]=[rest[j],rest[i]]}for(let i=0;i<n-1;i++)r.push(rest[i]);return r.join('')}
+function evalNum(g,s){let b=0,c=0;for(let i=0;i<g.length;i++){if(g[i]===s[i])b++;else if(s.includes(g[i]))c++}return{bulls:b,cows:c}}
+function initKnowledge(){const all=[];function gen(cur,used){if(cur.length===ME.digits){if(cur[0]!=='0')all.push(cur);return}for(let d=0;d<=9;d++){if(!used.has(d)){used.add(d);gen(cur+d,used);used.delete(d)}}}gen('',new Set());GAME.knowledge=all}
+function filterK(g,b,c){GAME.knowledge=GAME.knowledge.filter(x=>{const r=evalNum(g,x);return r.bulls===b&&r.cows===c})}
+function botPick(){if(!GAME.knowledge.length)return null;const top=Math.min(ME.mood==='competitive'?2:4,GAME.knowledge.length);return GAME.knowledge[~~(Math.random()*top)]}
+
+let idleTimer=null,botThinkTimer=null;
+function clearBotTimers(){clearTimeout(idleTimer);clearTimeout(botThinkTimer)}
+
+const BOT_LINES={
+  friendly:{start:["Yeehaw! Let's duel! Pick your number and let's go!","Howdy partner! Ready to play Bulls & Cows?","Let's have ourselves a proper number duel!"],bull:["A bull! You're on the right trail, cowpoke!","Great shot! One right in place!","That's a bull! Getting warmer!"],cow:["A cow! That digit's in there somewhere!","Close! A cow means you're on the right track!","That digit exists but wandered off to the wrong spot!"],nothing:["Nope, none of those! But now ya know!","Zero! That's useful info too, partner!","Clean miss — cross those off yer list!"],idle:["Take yer time... *whistles*","Anytime you're ready, partner!","The tumbleweeds are movin' faster than you... 🌵","*hums a cowboy tune*","Still here, partner! No rush!","Maybe the number will come to ya in a vision?"],robGuess:["Let Robert think a spell...","Hmm... my cowboy logic says...","Process of elimination time!"],win:["YOU GOT IT! YEEHAW! 🎉","You cracked my number! You're a natural!","I tip my hat to ya, partner! Well played!"],lose:["Gotcha! Robert's brain wins again!","I figured out your number! Better luck next time!","My lasso never misses a number! 🤠"],dance:["OH YEAH! I know one of your digits! 💃","*victory shuffle* I'm getting closer!","Robert's dancing because Robert KNOWS something! 🎵"]},
+  sassy:{start:["Oh honey, you really think you can beat ME? 😏","Let's make this quick. I have places to be.","Cute avatar. Won't help though. 💅"],bull:["Okay FINE, a bull. Lucky guess. 😒","A bull? Don't get cocky.","I'll allow it. Barely."],cow:["A cow. Barely counts. 🙄","Oh you got a cow. Medal's in the mail. Never arriving.","Close-ish. If you squint."],nothing:["Nothing! Zero! Come ON. 💀","Were you even trying?","Absolutely nothing. Stunning performance."],idle:["Are you thinking or sleeping? 😴","This is taking forever. *files nails*","Sometime today would be nice.","I charge by the hour. You owe me.","The cactus next to me has made more moves."],robGuess:["Watch a master work. 😎","My brain is simply built different.","Observe. Learn. Despair."],win:["FINALLY. Took you long enough.","You got me. I was going easy on you.","Fine. You win. Don't let it go to your head. 💅"],lose:["Called it. I always call it. 💅","Robert wins again! Better luck next time, boo!","Did you really think that was gonna work?"],dance:["I got one of yours! Watch me celebrate! 💅","Victory strut activated! You're welcome! 🔥","Oh YES. I know something you don't! 😏"]},
+  competitive:{start:["GAME ON. I will not lose. 🏆","Strategy. Logic. Discipline. Let's GO.","I've cracked 10,000 numbers. Prepare yourself."],bull:["BULL! Recalibrating. You're better than expected.","Good move. But I've analyzed your pattern.","Solid. But I'm still ahead strategically."],cow:["Cow noted. Algorithm updates.","Partial hit. You're improving. Not enough.","Interesting. I've already countered it mentally."],nothing:["Zero. As predicted. Narrowing candidates.","Nothing. My deduction tree grows stronger.","Eliminated! My model gets more accurate."],idle:["Every second you wait, I narrow your number.","FOCUS. This is a duel, not a nap.","My next guess is calculated. Where's yours?","I've already eliminated 40% of possibilities. You?"],robGuess:["DEPLOYING OPTIMAL GUESS SEQUENCE.","Probability maximized. Firing!","Calculated. Aimed. Inevitable."],win:["VICTORY! My streak continues. 🏆","Calculated win. You pushed me. Respect.","Expected outcome: achieved."],lose:["...I didn't account for that. Rematch. NOW.","You beat me. This goes in the record books.","My algorithm failed. It won't again."],dance:["Statistically optimal outcome achieved! Dance protocol!","One digit confirmed! Efficiency: maximum! 🏆","My model predicted this! *does not stop dancing*"]},
+  rage:{start:["IF YOU BEAT ME I'M FLIPPING THIS RANCH 😤","DON'T YOU DARE GUESS RIGHT!!","THIS IS WAR. I HOPE YOU'RE READY."],bull:["A BULL?? HOW!! THIS IS FINE. (IT'S NOT FINE)","HOW DID YOU GET THAT. IMPOSSIBLE.","A BULL!! UNBELIEVABLE!! 😤"],cow:["A COW. FINE. I DON'T CARE. I DO. 😠","STOP GETTING COWS!! HOW!!","A COW!! FINE!! YOU'RE STILL LOSING!!"],nothing:["NOTHING!! YES!! IN YOUR FACE!! 🤣","ZERO!! MY NUMBER FORTRESS HOLDS!!","NOTHING! HAHAHAHA YES!!"],idle:["WHY AREN'T YOU GUESSING?? GUESS!! NOW!!","I AM GOING TO EXPLODE WAITING.","EVERY SECOND I BECOME MORE UNHINGED.","MY EYE IS TWITCHING. YOUR FAULT.","GUESS. THE. NUMBER. PLEASE."],robGuess:["OKAY FOCUS ROBERT FOCUS. THINK.","I KNOW THIS. DON'T MESS UP DON'T MESS UP.","CALCULATING WITH EXTREME EMOTIONAL INVESTMENT."],win:["I GOT IT!! YEAAAH I AM THE GREATEST!! 🤠","THAT'S WHAT I'M TALKING ABOUT!! EAT DUST!!","VICTORY!! SWEET SWEET VICTORY!!"],lose:["no. no no no. this didn't happen.","i need a minute. you got lucky. incredibly lucky.","...rematch. right now."],dance:["I GOT ONE!! WITNESS THE DANCE!! 🕺","YESYESYES!! VICTORY SHUFFLE!! I CANNOT BE STOPPED!!","I KNOW YOUR DIGIT!! DEAL WITH IT!!"]},
+  thinker:{start:["This game is a metaphor for life. We all have hidden numbers.","The first guess is like being born — full of hope, zero data.","Numbers. Hidden. Revealed through inference. Like the self."],bull:["A bull... like certainty in life. Rare and beautiful.","Right place, right time. Isn't that all any of us want?","Correctness in position. Like finding your purpose."],cow:["A cow. Right idea, wrong execution. Most human endeavors.","Close but not quite. Like reaching for a dream.","Present but displaced. Like a memory you can't place."],nothing:["Nothing. And yet — is nothing truly nothing? Or information?","Zero. A blank slate. A new beginning. Beautiful.","Absence of data is data itself. Socrates would be proud."],idle:["*stares into distance* What even IS a number, really?","The desert teaches patience. So does this game. So does love.","If a guess is never made, does the number still exist?","What does it mean to 'win'? Is either of us truly free?","The number waits. Patient. Absolute."],robGuess:["I wonder if the number knows it's being sought...","Each guess is a question the universe may or may not answer.","I choose my guess as I choose my path — with intention."],win:["You found it. Like finding meaning — it was always there.","Victory is just another beginning. What will you seek next?","You saw through the fog. What else can you see?"],lose:["I found your number. In doing so, I found a piece of myself.","Numbers don't lie. They reveal. That is all.","The number yielded to patience and logic. As all things must."],dance:["I've deduced a digit. *performs slow, meaningful dance*","A digit confirmed. Movement is the body's language for joy.","Knowledge acquired. *dances with quiet dignity*"]}
+};
+function R(type){const lines=BOT_LINES[ME.mood]?.[type]||BOT_LINES.friendly[type]||['...'];return lines[~~(Math.random()*lines.length)]}
+function robSay(text){const b=document.getElementById('narrator-bubble');if(!b)return;b.textContent=text;b.style.animation='none';requestAnimationFrame(()=>b.style.animation='')}
+
+function startBotGame(){
+  GAME.robSecret=genNum(ME.digits);
+  GAME.cur=[];GAME.myGuesses=[];GAME.robGuesses=[];GAME.myTurns=0;GAME.robTurns=0;GAME.over=false;
+  initKnowledge();
+  document.getElementById('narrator-av').textContent='🤠';
+  document.getElementById('chat-panel').style.display='none';
+  document.getElementById('hud-my-g').textContent='0';
+  document.getElementById('hud-opp-g').textContent='0';
+  document.getElementById('timer-num').textContent='--';
+  document.getElementById('timer-fill').style.width='100%';
+  document.getElementById('my-history').innerHTML='';
+  document.getElementById('opp-history').innerHTML='';
+  document.getElementById('my-av-display').textContent=ME.avatar;
+  document.getElementById('my-name-display').innerHTML=ME.name+'<span class="you-pill">YOU</span>';
+  document.getElementById('my-secret-reveal').textContent=GAME.mySecret.split('').join(' ');
+  document.getElementById('opp-av-display').textContent='🤠';
+  document.getElementById('opp-name-display').textContent='Cowboy Robert';
+  document.getElementById('my-turn-dot').classList.add('active');
+  document.getElementById('opp-turn-dot').classList.remove('active');
+  document.getElementById('my-turn-label').style.display='inline';
+  document.getElementById('opp-turn-label').style.display='none';
+  document.getElementById('fire-btn').disabled=false;
+  document.getElementById('fire-btn').textContent='🔫 FIRE!';
+  buildDigitRow();buildNumpad();buildSuspList();buildPosTracker();buildDragTray();
+  showScreen('game');
+  robSay(R('start'));
+  resetIdleTimer();
 }
 
-// ── GAME UI ──
-function initGameUI(state) {
-  const me = state.players.find(p => p.id === MY_ID);
-  const opp = state.players.find(p => p.id !== MY_ID);
-  if (!me || !opp) return;
-
-  document.getElementById('my-av').textContent = me.avatar;
-  document.getElementById('my-name').textContent = me.name;
-  document.getElementById('my-secret-show').textContent = MY_SECRET.split('').join(' ');
-  document.getElementById('opp-av').textContent = opp.avatar;
-  document.getElementById('opp-name').textContent = opp.name;
-
-  document.getElementById('my-guess-count').textContent = '0';
-  document.getElementById('opp-guess-count').textContent = '0';
-  document.getElementById('my-history').innerHTML = '';
-  document.getElementById('opp-history').innerHTML = '';
-  document.getElementById('chat-msgs').innerHTML = '';
-  CUR = []; buildDigitRow(); buildNumpad(); updateTurnUI();
+// ── IDLE TIMER ──
+function resetIdleTimer(){
+  clearTimeout(idleTimer);
+  if(GAME.over)return;
+  idleTimer=setTimeout(()=>{robSay(R('idle'));resetIdleTimer()},8000+Math.random()*5000);
 }
 
-function buildDigitRow() {
-  const c = document.getElementById('digit-row'); c.innerHTML = '';
-  for (let i = 0; i < ME.digits; i++) {
-    const d = document.createElement('div');
-    d.className = 'dbox empty'; d.id = `dg${i}`; d.textContent = '?';
-    d.onclick = () => { if (i < CUR.length) { CUR.splice(i, 1); updateDigitRow(); markNumpad(); } };
+// ── INPUT ──
+function buildDigitRow(){
+  const c=document.getElementById('digit-row');c.innerHTML='';
+  for(let i=0;i<ME.digits;i++){const d=document.createElement('div');d.className='dbox empty';d.id=`dg${i}`;d.textContent='?';d.onclick=()=>{if(i<GAME.cur.length){GAME.cur.splice(i,1);updDigitRow();markNp()}};c.appendChild(d)}
+}
+function updDigitRow(){
+  for(let i=0;i<ME.digits;i++){const el=document.getElementById(`dg${i}`);if(!el)continue;if(i<GAME.cur.length){el.textContent=GAME.cur[i];el.classList.remove('empty')}else{el.textContent='?';el.classList.add('empty')}}
+}
+function buildNumpad(){
+  const c=document.getElementById('numpad');c.innerHTML='';
+  for(let i=0;i<=9;i++){const b=document.createElement('div');b.className='npb';b.id=`np${i}`;b.textContent=i;const add=()=>{if(GAME.cur.length>=ME.digits||GAME.cur.includes(String(i))||(GAME.cur.length===0&&i===0))return;GAME.cur.push(String(i));sfxClick();updDigitRow();markNp();resetIdleTimer()};b.onclick=add;b.addEventListener('touchstart',e=>{e.preventDefault();add()},{passive:false});c.appendChild(b)}
+  const del=document.createElement('div');del.className='npb del';del.textContent='⌫';del.onclick=()=>{GAME.cur.pop();updDigitRow();markNp()};del.addEventListener('touchstart',e=>{e.preventDefault();del.onclick()},{passive:false});c.appendChild(del);
+}
+function markNp(){for(let i=0;i<=9;i++){const el=document.getElementById(`np${i}`);if(el)el.classList.toggle('used',GAME.cur.includes(String(i))||(GAME.cur.length===0&&i===0))}}
+
+function buildSuspList(){
+  const c=document.getElementById('susp-list');c.innerHTML='';
+  for(let i=0;i<=9;i++){
+    const d=document.createElement('div');d.className='susp-d';d.id=`su${i}`;d.textContent=i;
+    let clks=0,ct=null;
+    const tap=()=>{clks++;clearTimeout(ct);ct=setTimeout(()=>{if(clks>=2){d.classList.add('present');d.classList.remove('crossed')}else{if(d.classList.contains('present'))d.classList.remove('present');else d.classList.toggle('crossed')}sfxClick();clks=0},280)};
+    d.onclick=tap;d.addEventListener('touchstart',e=>{e.preventDefault();tap()},{passive:false});
     c.appendChild(d);
   }
 }
-function updateDigitRow() {
-  for (let i = 0; i < ME.digits; i++) {
-    const el = document.getElementById(`dg${i}`); if (!el) continue;
-    if (i < CUR.length) { el.textContent = CUR[i]; el.classList.remove('empty'); }
-    else { el.textContent = '?'; el.classList.add('empty'); }
+function buildPosTracker(){
+  const c=document.getElementById('pos-tracker');c.innerHTML='';
+  for(let i=0;i<ME.digits;i++){
+    const s=document.createElement('div');s.className='pos-slot';s.id=`ps${i}`;s.textContent='?';
+    const lbl=document.createElement('div');lbl.className='pos-slot-lbl';lbl.textContent=`POS ${i+1}`;s.appendChild(lbl);
+    s.addEventListener('dragover',e=>{e.preventDefault();s.classList.add('drag-over')});
+    s.addEventListener('dragleave',()=>s.classList.remove('drag-over'));
+    s.addEventListener('drop',e=>{e.preventDefault();s.classList.remove('drag-over');const dig=e.dataTransfer.getData('text/plain');s.textContent=dig;s.classList.add('filled');const l2=document.createElement('div');l2.className='pos-slot-lbl';l2.textContent=`POS ${i+1}`;s.appendChild(l2)});
+    s.addEventListener('dblclick',()=>{s.textContent='?';s.classList.remove('filled');const l3=document.createElement('div');l3.className='pos-slot-lbl';l3.textContent=`POS ${i+1}`;s.appendChild(l3)});
+    c.appendChild(s);
   }
 }
-function buildNumpad() {
-  const c = document.getElementById('numpad'); c.innerHTML = '';
-  for (let i = 0; i <= 9; i++) {
-    const b = document.createElement('div');
-    b.className = 'npb'; b.id = `np${i}`; b.textContent = i;
-    const addD = () => {
-      if (CUR.length >= ME.digits || CUR.includes(String(i)) || (CUR.length === 0 && i === 0)) return;
-      CUR.push(String(i)); updateDigitRow(); markNumpad();
-    };
-    b.onclick = addD;
-    b.addEventListener('touchstart', e => { e.preventDefault(); addD(); }, { passive: false });
-    c.appendChild(b);
+function buildDragTray(){
+  const c=document.getElementById('drag-tray');c.innerHTML='';
+  for(let i=0;i<=9;i++){const d=document.createElement('div');d.className='drag-num';d.textContent=i;d.draggable=true;d.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',String(i));d.style.opacity='.4'});d.addEventListener('dragend',()=>d.style.opacity='1');c.appendChild(d)}
+}
+
+// ── SUBMIT (bot mode) ──
+function submitGuess(){
+  if(ME.mode==='online'){onlineGuess();return}
+  if(GAME.cur.length!==ME.digits||GAME.over)return;
+  const guess=GAME.cur.join('');
+  GAME.cur=[];updDigitRow();markNp();
+  GAME.myTurns++;document.getElementById('hud-my-g').textContent=GAME.myTurns;
+  resetIdleTimer();
+  const{bulls,cows}=evalNum(guess,GAME.robSecret);
+  GAME.myGuesses.push({guess,bulls,cows});
+  addHistEntry(guess,bulls,cows,'my-history');
+  if(bulls>0)showBCFlash('bull',bulls);
+  else if(cows>0)showBCFlash('cow',cows);
+  if(bulls===ME.digits){playerWinsBot();return}
+  const tp=bulls>0?'bull':cows>0?'cow':'nothing';
+  robSay(R(tp));sfxClick();
+  setTimeout(botTurn,1400);
+}
+
+function botTurn(){
+  if(GAME.over)return;
+  robSay(R('robGuess'));
+  botThinkTimer=setTimeout(()=>{
+    const guess=botPick();if(!guess)return;
+    GAME.robTurns++;document.getElementById('hud-opp-g').textContent=GAME.robTurns;
+    const{bulls,cows}=evalNum(guess,GAME.mySecret);
+    filterK(guess,bulls,cows);GAME.robGuesses.push({guess,bulls,cows});
+    addHistEntry(guess,bulls,cows,'opp-history');
+    if(bulls===ME.digits){botWins(guess);return}
+    if(bulls>0||cows>0){robSay(R('dance'));sfxDance()}
+    else robSay(R('start'));
+  },1100);
+}
+function sfxDance(){initA();[523,659,523,784].forEach((f,i)=>pN(f,i*.1,.08,.07,'square'))}
+
+function playerWinsBot(){
+  GAME.over=true;clearBotTimers();sfxWin();
+  robSay(R('win'));
+  setTimeout(()=>showResult(true,`Robert's number was ${GAME.robSecret}`,`You cracked it in ${GAME.myTurns} guess${GAME.myTurns!==1?'es':''}!`,true),800);
+}
+function botWins(guess){
+  GAME.over=true;clearBotTimers();sfxLose();
+  GAME.loseStreak++;
+  robSay(R('lose'));
+  setTimeout(()=>showResult(false,`Your secret was ${GAME.mySecret}`,`Robert cracked it in ${GAME.robTurns} guess${GAME.robTurns!==1?'es':''}!`,true),800);
+}
+
+// ══════════════════════════════════════════════════════
+//  SHARED UI
+// ══════════════════════════════════════════════════════
+function addHistEntry(guess,bulls,cows,id){
+  const c=document.getElementById(id);if(!c)return;
+  const pr=c.querySelector('.latest');if(pr)pr.classList.remove('latest');
+  const e=document.createElement('div');e.className='hent latest';
+  e.innerHTML=`<span class="hguess">${guess.split('').join(' ')}</span><span class="hres"><span class="bt">🐂${bulls}</span><span class="cw">🐄${cows}</span></span>`;
+  c.appendChild(e);c.scrollTop=c.scrollHeight;
+}
+
+function showBCFlash(type,count){
+  if(!type)return;
+  const fl=document.getElementById('bc-flash'),txt=document.getElementById('bc-text');
+  fl.className='';void fl.offsetWidth;
+  fl.classList.add(type==='bull'?'bull-f':'cow-f');
+  const emoji=type==='bull'?'🐂':'🐄';
+  txt.textContent=emoji.repeat(Math.min(count,5))+' '+count+' '+(type==='bull'?'BULL':'COW')+(count>1?'S':'')+'!';
+  txt.style.color=type==='bull'?'#e67e22':'#3498db';
+  fl.style.opacity='1';
+  if(type==='bull')sfxBull();else sfxCow();
+  sfxCoin();
+  setTimeout(()=>{fl.style.opacity='0';fl.className=''},1500);
+}
+
+function showResult(won,line1,line2,isBot){
+  const ol=document.getElementById('result-overlay');ol.classList.add('show');
+  document.getElementById('result-title').textContent=won?'🎉 YOU WIN!':'🤠 '+(isBot?'ROBERT WINS!':'YOU LOSE!');
+  document.getElementById('result-title').className='result-title '+(won?'result-win':'result-lose');
+  document.getElementById('result-body').innerHTML=`${line1}<br>${line2}`;
+  document.getElementById('rematch-status').textContent='';
+  if(isBot){document.getElementById('rematch-btn').textContent='🔄 PLAY AGAIN';document.getElementById('rematch-btn').onclick=()=>{document.getElementById('result-overlay').classList.remove('show');buildSecretUI();showScreen('secret')}}
+  else{document.getElementById('rematch-btn').textContent='🔄 REMATCH';document.getElementById('rematch-btn').onclick=requestRematch}
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3200)}
+
+// ══════════════════════════════════════════════════════
+//  ONLINE MULTIPLAYER
+// ══════════════════════════════════════════════════════
+let socket;
+try { socket = io(); } catch(e) { socket = { on:()=>{}, emit:()=>{} }; }
+
+socket.on('connect',()=>{
+  ONLINE.id=socket.id;
+  document.getElementById('conn-dot').textContent='● ONLINE';
+  document.getElementById('conn-dot').className='on';
+  socket.emit('set_player',{name:ME.name,avatar:ME.avatar});
+});
+socket.on('disconnect',()=>{
+  document.getElementById('conn-dot').textContent='● OFFLINE';
+  document.getElementById('conn-dot').className='off';
+});
+socket.on('player_set',({id})=>{ONLINE.id=id});
+
+socket.on('in_queue',()=>{
+  showScreen('waiting');
+  document.getElementById('wait-title').textContent='🔍 FINDING OPPONENT...';
+  document.getElementById('room-code-wrap').style.display='none';
+  document.getElementById('queue-anim').style.display='block';
+  renderWaitCards([]);
+});
+socket.on('room_created',({roomId,state})=>{
+  ONLINE.roomId=roomId;
+  showScreen('waiting');
+  document.getElementById('wait-title').textContent='🔒 PRIVATE ROOM CREATED';
+  document.getElementById('room-code-wrap').style.display='block';
+  document.getElementById('room-code-show').textContent=roomId;
+  document.getElementById('queue-anim').style.display='none';
+  renderWaitCards(state.players);
+});
+socket.on('room_joined',({roomId,state})=>{
+  ONLINE.roomId=roomId;
+  showScreen('waiting');
+  document.getElementById('wait-title').textContent=state.players.length>=2?'⚔️ OPPONENT FOUND!':'🔒 JOINED ROOM';
+  document.getElementById('room-code-wrap').style.display=state.players.length<2?'block':'none';
+  if(state.players.length<2)document.getElementById('room-code-show').textContent=roomId;
+  document.getElementById('queue-anim').style.display='none';
+  renderWaitCards(state.players);
+  if(state.players.length>=2)setTimeout(()=>{document.getElementById('wait-title').textContent='✅ BOTH PLAYERS READY — PICK YOUR NUMBER!';setTimeout(()=>{buildSecretUI();showScreen('secret')},1500)},500);
+});
+socket.on('phase_change',({phase})=>{
+  if(phase==='picking'){buildSecretUI();showScreen('secret')}
+});
+socket.on('player_ready',({id,name})=>{
+  const isMine=id===ONLINE.id;
+  document.getElementById('secret-hint').textContent=isMine?'✅ Locked! Waiting for opponent...':(`✅ ${name} locked in! Your turn...`);
+});
+socket.on('secret_confirmed',()=>{
+  document.getElementById('lock-btn').textContent='✅ Locked in!';
+  document.getElementById('lock-btn').style.opacity='.5';
+  document.getElementById('lock-btn').style.pointerEvents='none';
+});
+socket.on('game_start',(state)=>{
+  ONLINE.turn=state.turn;
+  startOnlineGame(state);
+});
+socket.on('guess_result',({by,guess,bulls,cows})=>{
+  const isMine=by===ONLINE.id;
+  addHistEntry(guess,bulls,cows,isMine?'my-history':'opp-history');
+  if(isMine){
+    document.getElementById('hud-my-g').textContent=parseInt(document.getElementById('hud-my-g').textContent)+1;
+    GAME.cur=[];updDigitRow();markNp();
+    showBCFlash(bulls>0?'bull':cows>0?'cow':null,bulls,cows);
+    robSay(bulls>0?R('bull'):cows>0?R('cow'):R('nothing'));
+  } else {
+    document.getElementById('hud-opp-g').textContent=parseInt(document.getElementById('hud-opp-g').textContent)+1;
+    robSay(bulls>0?'They got a bull on your number! Getting warm...':'They got nothing — your fortress holds!');
   }
-  const del = document.createElement('div');
-  del.className = 'npb del'; del.textContent = '⌫';
-  del.onclick = () => { CUR.pop(); updateDigitRow(); markNumpad(); };
-  del.addEventListener('touchstart', e => { e.preventDefault(); del.onclick(); }, { passive: false });
-  c.appendChild(del);
-}
-function markNumpad() {
-  for (let i = 0; i <= 9; i++) {
-    const el = document.getElementById(`np${i}`); if (!el) continue;
-    el.classList.toggle('used', CUR.includes(String(i)) || (CUR.length === 0 && i === 0));
+});
+socket.on('turn_change',({turn})=>{
+  ONLINE.turn=turn;updateOnlineTurnUI();
+  robSay(turn===ONLINE.id?R('start'):R('robGuess'));
+});
+socket.on('timer',(t)=>{
+  document.getElementById('timer-num').textContent=t;
+  const fill=document.getElementById('timer-fill');
+  fill.style.width=(t/60*100)+'%';
+  fill.className='timer-fill'+(t<=10?' danger':t<=20?' warn':'');
+});
+socket.on('game_over',({winner,winnerName,secret,guesses})=>{
+  const won=winner===ONLINE.id;
+  const myCount=(guesses[ONLINE.id]||[]).length;
+  const theirCount=(guesses[winner]||[]).length;
+  sfxWin();
+  showResult(won,
+    won?`You cracked ${document.getElementById('opp-name-display').textContent}'s number!`:`${winnerName} cracked your number!`,
+    won?`Their secret: ${secret} — ${myCount} guess${myCount!==1?'es':''}!`:`Your secret was ${GAME.mySecret} — they needed ${theirCount} guess${theirCount!==1?'es':''}!`,
+    false
+  );
+  robSay(won?R('win'):R('lose'));
+});
+socket.on('chat_msg',(msg)=>{
+  const c=document.getElementById('chat-msgs');if(!c)return;
+  const div=document.createElement('div');
+  if(msg.system){div.className='chat-line sys';div.textContent=msg.text}
+  else if(msg.from===ONLINE.id){div.className='chat-line mine';div.innerHTML=`<b>You:</b> ${esc(msg.text)}`}
+  else{div.className='chat-line';div.innerHTML=`<b>${esc(msg.name)}:</b> ${esc(msg.text)}`}
+  c.appendChild(div);c.scrollTop=c.scrollHeight;
+});
+socket.on('rematch_vote',({count})=>{document.getElementById('rematch-status').textContent=`${count}/2 want a rematch!`});
+socket.on('opponent_left',({name})=>{showToast(`${name} left the duel 🌵`);setTimeout(goHome,3000)});
+socket.on('error_msg',(msg)=>showToast('⚠️ '+msg));
+
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function renderWaitCards(players){
+  const wrap=document.getElementById('wait-cards');wrap.innerHTML='';
+  for(let i=0;i<2;i++){
+    const p=players[i];
+    if(p){const card=document.createElement('div');card.className='player-card'+(p.ready?' ready':'');card.innerHTML=`<div class="player-card-av">${p.avatar}</div><div class="player-card-name">${p.name}${p.id===ONLINE.id?' (YOU)':''}</div><div class="player-card-status ${p.ready?'ok':''}">${p.ready?'✅ Ready':'⏳ In lobby...'}</div>`;wrap.appendChild(card)}
+    else{const sl=document.createElement('div');sl.className='player-slot';sl.innerHTML='<span class="pulse-dot">⏳</span> Waiting...';wrap.appendChild(sl)}
   }
 }
 
-function updateTurnUI() {
-  const isMyTurn = TURN === MY_ID;
-  const fireBtn = document.getElementById('fire-btn');
-  if (fireBtn) { fireBtn.disabled = !isMyTurn; fireBtn.textContent = isMyTurn ? '🔫 FIRE!' : '⏳ Opponent\'s turn...'; }
-  const myInd = document.getElementById('my-turn-indicator');
-  const oppInd = document.getElementById('opp-turn-indicator');
-  if (myInd) { myInd.textContent = isMyTurn ? '← YOUR TURN' : ''; myInd.className = 'turn-indicator ' + (isMyTurn ? 'active' : 'waiting'); }
-  if (oppInd) { oppInd.textContent = !isMyTurn ? 'THEIR TURN →' : ''; oppInd.className = 'turn-indicator ' + (!isMyTurn ? 'active' : 'waiting'); }
+function startOnlineGame(state){
+  const me=state.players.find(p=>p.id===ONLINE.id);
+  const opp=state.players.find(p=>p.id!==ONLINE.id);
+  if(!me||!opp)return;
+  GAME.mySecret=ONLINE.secretInput.join('');
+  document.getElementById('chat-panel').style.display='block';
+  document.getElementById('chat-msgs').innerHTML='';
+  document.getElementById('my-history').innerHTML='';
+  document.getElementById('opp-history').innerHTML='';
+  document.getElementById('hud-my-g').textContent='0';
+  document.getElementById('hud-opp-g').textContent='0';
+  document.getElementById('my-av-display').textContent=me.avatar;
+  document.getElementById('my-name-display').innerHTML=me.name+'<span class="you-pill">YOU</span>';
+  document.getElementById('my-secret-reveal').textContent=GAME.mySecret.split('').join(' ');
+  document.getElementById('opp-av-display').textContent=opp.avatar;
+  document.getElementById('opp-name-display').textContent=opp.name;
+  document.getElementById('narrator-av').textContent='🤠';
+  GAME.cur=[];buildDigitRow();buildNumpad();buildSuspList();buildPosTracker();buildDragTray();
+  showScreen('game');
+  updateOnlineTurnUI();
+  robSay('Welcome to the duel, pardners! First to crack the other\'s number wins!');
 }
 
-function clearTimerUI() {
-  const fill = document.getElementById('timer-fill');
-  if (fill) fill.style.width = '0%';
-  document.getElementById('timer-num').textContent = '--';
+function updateOnlineTurnUI(){
+  const mine=ONLINE.turn===ONLINE.id;
+  const fb=document.getElementById('fire-btn');if(fb){fb.disabled=!mine;fb.textContent=mine?'🔫 FIRE!':'⏳ Their turn...'}
+  document.getElementById('my-turn-dot').classList.toggle('active',mine);
+  document.getElementById('opp-turn-dot').classList.toggle('active',!mine);
+  document.getElementById('my-turn-label').style.display=mine?'inline':'none';
+  document.getElementById('opp-turn-label').style.display=!mine?'inline':'none';
 }
 
-function addHistEntry(guess, bulls, cows, containerId) {
-  const c = document.getElementById(containerId); if (!c) return;
-  const prev = c.querySelector('.latest'); if (prev) prev.classList.remove('latest');
-  const e = document.createElement('div'); e.className = 'hent latest';
-  e.innerHTML = `<span class="hguess">${guess.split('').join(' ')}</span><span class="hres"><span class="bt">🐂${bulls}</span><span class="cw">🐄${cows}</span></span>`;
-  c.appendChild(e); c.scrollTop = c.scrollHeight;
+function onlineGuess(){
+  if(GAME.cur.length!==ME.digits||ONLINE.turn!==ONLINE.id)return;
+  socket.emit('make_guess',{guess:GAME.cur.join('')});
 }
 
-function addChatLine(msg) {
-  const c = document.getElementById('chat-msgs'); if (!c) return;
-  const div = document.createElement('div');
-  if (msg.system) { div.className = 'chat-line system'; div.textContent = msg.text; }
-  else if (msg.from === MY_ID) { div.className = 'chat-line mine'; div.innerHTML = `<b>You:</b> ${escapeHtml(msg.text)}`; }
-  else { div.className = 'chat-line'; div.innerHTML = `<b>${escapeHtml(msg.name)}:</b> ${escapeHtml(msg.text)}`; }
-  c.appendChild(div); c.scrollTop = c.scrollHeight;
-}
-
-function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-function showBCFlash(type, bulls, cows) {
-  if (!type) return;
-  const fl = document.getElementById('bc-flash');
-  const txt = document.getElementById('bc-text');
-  fl.className = ''; void fl.offsetWidth;
-  fl.classList.add(type === 'bull' ? 'bull-f' : 'cow-f');
-  const emoji = type === 'bull' ? '🐂' : '🐄';
-  const count = type === 'bull' ? bulls : cows;
-  txt.textContent = emoji.repeat(Math.min(count, 5)) + ' ' + count + ' ' + (type === 'bull' ? 'BULL' : 'COW') + (count > 1 ? 'S' : '') + '!';
-  txt.style.color = type === 'bull' ? '#e67e22' : '#3498db';
-  fl.style.opacity = '1';
-  setTimeout(() => { fl.style.opacity = '0'; fl.className = ''; }, 1500);
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.style.display = 'block';
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.style.display = 'none', 3000);
-}
-
-// ══════════════════════════════════════════
-// ACTIONS
-// ══════════════════════════════════════════
-function findMatch() {
-  ME.name = document.getElementById('player-name').value.trim() || 'Cowpoke';
-  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
+function findMatch(){
+  ME.name=document.getElementById('player-name').value.trim()||ME.name;
+  socket.emit('set_player',{name:ME.name,avatar:ME.avatar});
   socket.emit('find_match');
 }
-
-function showCreatePrivate() {
-  document.getElementById('private-create-panel').style.display =
-    document.getElementById('private-create-panel').style.display === 'none' ? 'block' : 'none';
-  document.getElementById('private-join-panel').style.display = 'none';
+function createPrivate(){
+  const pw=document.getElementById('create-password').value.trim();
+  socket.emit('create_private',{password:pw||null});
 }
-function showJoinPrivate() {
-  document.getElementById('private-join-panel').style.display =
-    document.getElementById('private-join-panel').style.display === 'none' ? 'block' : 'none';
-  document.getElementById('private-create-panel').style.display = 'none';
+function joinPrivate(){
+  const code=document.getElementById('join-code').value.trim();
+  const pw=document.getElementById('join-password').value.trim();
+  if(!code){showToast('Enter a room code!');return}
+  socket.emit('join_private',{roomId:code,password:pw||null});
 }
-
-function createPrivate() {
-  ME.name = document.getElementById('player-name').value.trim() || 'Cowpoke';
-  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
-  const pw = document.getElementById('create-password').value.trim();
-  socket.emit('create_private', { password: pw || null });
+function cancelWait(){socket.emit('cancel_queue');goHome()}
+function requestRematch(){socket.emit('request_rematch')}
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const text=inp.value.trim();if(!text)return;
+  socket.emit('chat',{text});inp.value='';
 }
-
-function joinPrivate() {
-  ME.name = document.getElementById('player-name').value.trim() || 'Cowpoke';
-  socket.emit('set_player', { name: ME.name, avatar: ME.avatar });
-  const code = document.getElementById('join-code').value.trim();
-  const pw = document.getElementById('join-password').value.trim();
-  if (!code) { showToast('Enter a room code!'); return; }
-  socket.emit('join_private', { roomId: code, password: pw || null });
+function copyRoomCode(){
+  const code=document.getElementById('room-code-show').textContent;
+  navigator.clipboard?.writeText(code).then(()=>showToast('Room code copied!')).catch(()=>showToast(code));
 }
 
-function cancelWait() {
-  socket.emit('cancel_queue');
-  goLobby();
-}
-
-function makeGuess() {
-  if (CUR.length !== ME.digits || TURN !== MY_ID) return;
-  socket.emit('make_guess', { guess: CUR.join('') });
-}
-
-function sendChat() {
-  const inp = document.getElementById('chat-input');
-  const text = inp.value.trim();
-  if (!text) return;
-  socket.emit('chat', { text });
-  inp.value = '';
-}
-
-function requestRematch() {
-  socket.emit('request_rematch');
-  document.getElementById('rematch-status').textContent = '1/2 voted for rematch...';
-}
-
-function goLobby() {
-  document.getElementById('result-overlay').classList.remove('show');
-  showScreen('lobby');
-  ROOM = { id: null, state: null }; CUR = []; MY_SECRET = ''; SECRET_INPUT = []; TURN = null;
-}
-
-function toggleTheme() {
-  nightMode = !nightMode;
-  document.documentElement.setAttribute('data-theme', nightMode ? 'night' : 'day');
-  document.getElementById('theme-btn').textContent = nightMode ? '☀️ DAY' : '🌙 NIGHT';
-}
-
-// Keyboard
-document.addEventListener('keydown', e => {
-  if (document.getElementById('screen-game').classList.contains('active')) {
-    if (e.key >= '0' && e.key <= '9' && TURN === MY_ID) {
-      const i = parseInt(e.key);
-      if (CUR.length < ME.digits && !CUR.includes(String(i)) && !(CUR.length === 0 && i === 0)) { CUR.push(String(i)); updateDigitRow(); markNumpad(); }
-    }
-    if (e.key === 'Backspace' && document.activeElement.id !== 'chat-input') { CUR.pop(); updateDigitRow(); markNumpad(); }
-    if (e.key === 'Enter' && document.activeElement.id !== 'chat-input') makeGuess();
+// ══════════════════════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('screen-game').classList.contains('active'))return;
+  if(document.activeElement.id==='chat-input')return;
+  if(e.key>='0'&&e.key<='9'){
+    const i=parseInt(e.key);
+    if(GAME.cur.length<ME.digits&&!GAME.cur.includes(String(i))&&!(GAME.cur.length===0&&i===0)){GAME.cur.push(String(i));updDigitRow();markNp();resetIdleTimer()}
   }
+  if(e.key==='Backspace'){e.preventDefault();GAME.cur.pop();updDigitRow();markNp()}
+  if(e.key==='Enter')submitGuess();
 });
 </script>
 </body>
